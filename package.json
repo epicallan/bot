@@ -1,0 +1,42 @@
+{
+  "name": "bot-engine",
+  "version": "1.0.0",
+  "description": "e-commerce bot engine",
+  "main": "index.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "pulp test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/epicallan/bot.git"
+  },
+  "keywords": [
+    "messenger",
+    "bot",
+    "messenger",
+    "bot",
+    "facebook",
+    "purescript",
+    "hyper"
+  ],
+  "author": "epicallan.al@gmail.com",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/epicallan/bot/issues"
+  },
+  "dependencies": {
+    "body-parser": "^1.13.3",
+    "cookie-parser": "^1.4.3",
+    "express": "~4.14.0",
+    "express-session": "^1.15.2",
+    "passport": "^0.3.2",
+    "passport-facebook": "^2.1.1"
+  },
+  "homepage": "https://github.com/epicallan/bot#readme",
+  "devDependencies": {
+    "standard": "^10.0.1"
+  }
+}
