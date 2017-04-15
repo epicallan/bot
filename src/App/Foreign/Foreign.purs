@@ -1,8 +1,7 @@
 module App.Foreign where
 
--- import App.Config.Config (FacebookStrategy)
+import App.Config.Config (FacebookStrategy)
 import App.Model.User (User)
--- import Control.Monad.Eff (Eff)
 import Data.Function.Uncurried (Fn3)
 import Node.Express.Types (ExpressM, Request, Response)
 import Prelude (Unit)
@@ -20,4 +19,4 @@ foreign import passportSession :: forall e. Fn3 Request Response (ExpressM e Uni
 
 foreign import passportInitialize :: forall e. Fn3 Request Response (ExpressM e Unit) (ExpressM e Unit)
 
-foreign import facebookAuth :: forall a. a -> (User -> MONGO) -> PASSPORT
+foreign import facebookAuth :: FacebookStrategy -> (User -> MONGO) -> PASSPORT
