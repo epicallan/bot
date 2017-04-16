@@ -10,12 +10,14 @@ var session = require('express-session');
 
 var MongoStore = require('connect-mongo')(session);
 
-exports.expressSession = function (db) {
-  return session({
-    secret: 'secret to be changed',
-    store: new MongoStore({db : db})
-  });
-}
+exports.expressSession = session;
+
+// exports.expressSessionDb = function (db) {
+//   return session({
+//     secret: 'secret to be changed',
+//     store: new MongoStore({db : db})
+//   });
+// }
 
 exports.morgan = require('morgan')('dev')
 
@@ -34,7 +36,7 @@ exports.facebookAuth = function(saveUser) {
             callbackURL: 'http://localhost:8080/login/fb/return'
           },
           function(accessToken, refreshToken, profile, done) {
-            saveUser(profile); // brittle 
+            saveUser(profile); // brittle
             done(null, profile);
           }
         )

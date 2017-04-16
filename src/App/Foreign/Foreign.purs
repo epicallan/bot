@@ -4,7 +4,6 @@ module App.Foreign where
 -- import App.Model.User (User)
 -- import Control.Monad.Eff (Eff)
 import Data.Function.Uncurried (Fn3)
-import Database.Mongo.Mongo (Database)
 import Node.Express.Types (ExpressM, Request, Response)
 import Prelude (Unit)
 
@@ -17,7 +16,7 @@ foreign import morgan :: forall e. Fn3 Request Response (ExpressM e Unit) (Expre
 
 foreign import cookieParser :: forall e. Fn3 Request Response (ExpressM e Unit) (ExpressM e Unit)
 
-foreign import expressSession :: forall e. Database -> Fn3 Request Response (ExpressM e Unit) (ExpressM e Unit)
+foreign import expressSession :: forall e. Fn3 Request Response (ExpressM e Unit) (ExpressM e Unit)
 
 foreign import passportSession :: forall e. Fn3 Request Response (ExpressM e Unit) (ExpressM e Unit)
 
