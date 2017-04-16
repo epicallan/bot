@@ -1,27 +1,58 @@
 module App.Model.User where
-import Control.Monad.Aff.Console (CONSOLE)
+import Database.Mongo.Bson.BsonValue as B
+import Control.Monad.Aff (Aff)
+import Control.Monad.Aff.Console (error, log)
 import Control.Monad.Eff.Class (liftEff)
-import Database.Mongo.Mongo (find)
-import Prelude (Unit, unit)
+import Data.Argonaut (Json, decodeJson, jsonEmptyObject, (.?), (:=), (~>))
+import Data.Argonaut.Decode (decodeJson)
+import Data.Argonaut.Decode.Class (class DecodeJson)
+import Data.Argonaut.Encode.Class (class EncodeJson)
+import Data.Array (length)
+import Data.Either (Either(..))
+import Data.Maybe (Maybe(..))
+import Database.Mongo.Mongo (DB, Database, Collection, collection, find, findOne, collect)
+import Prelude (bind, ($), pure, Unit, (>))
+import Unsafe.Coerce (unsafeCoerce)
 
-type User =
+
+newtype User = User
   { id :: String
-  , displayName :: String
+  , username :: String
   , email :: String
-  , session :: String
   }
 
-init :: User
-init =
-  { id : ""
-  , displayName : ""
-  , email : ""
-  , session : ""
-  }
 
-createUser :: forall e. UserCollection -> User -> Eff(db :: DB, console :: CONSOLE | e) Unit
-createUser col user = do
-  cur <- find ["id" := user.id] col
+instance decodeJsonUser :: DecodeJson User where
+  decodeJson json = do
+    obj  <- decodeJson json
+    username <- obj .? "username"
+    email <-  obj .? "email"
+    id <-  obj .? "id"
+    pure $ User { id, username, email }
+
+instance encodeJsonUser :: EncodeJson User where
+  encodeJson (User user)
+    =   "name" := user.username
+    ~>  "email" := user.email
+    ~>  "id" := user.id
+    ~> jsonEmptyObject
+
+toJson :: forall a. a -> Json
+toJson = unsafeCoerce
+
+-- findUser :: forall e. Database -> Aff (db :: DB | e) (Maybe User)
+-- findUser db = do
+--   col <- collection "user" db
+--   cur <- find [ "name" B.:= "Wow" ] [ "name" B.:= 1.0 ] col
+--   res <- collect cur
+--   let eitherUser = decodeJson $ toJson res
+--   case eitherUser of
+--     (Left err) -> pure $ Nothing
+--     (Right user) -> pure $ (Just user)
+
+findUser :: forall e. Database -> Aff (db :: DB | e) User
+findUser database = do
+  col <- collection "events" database
+  cur <- findOne [ "name" B.:= "Wow" ] [ "name" B.:= 1.0 ] col
   res <- collect cur
-  liftEff $ log $ res
-  pure unit
+  pure $ (res :: User)

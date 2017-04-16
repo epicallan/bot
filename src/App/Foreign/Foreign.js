@@ -1,36 +1,45 @@
-"use strict";
+'use strict';
 
-var passport = require("passport");
+var passport = require('passport');
 
-exports.jsonBodyParser = require("body-parser").json();
+exports.jsonBodyParser = require('body-parser').json();
 
-exports.cookieParser = require("cookie-parser");
+exports.cookieParser = require('cookie-parser');
 
-exports.expressSession = require("express-session")({
-  secret: "secret to be changed",
-  resave: true,
-  saveUninitialized: true
-});
+var session = require('express-session');
+
+var MongoStore = require('connect-mongo')(session);
+
+exports.expressSession = function (db) {
+  return session({
+    secret: 'secret to be changed',
+    store: new MongoStore({db : db})
+  });
+}
+
+exports.morgan = require('morgan')('dev')
 
 exports.passportSession = passport.session();
 
 exports.passportInitialize = passport.initialize();
 
-exports.facebookAuth = function(options) {
-  return function (cb) {
-    return passport.use(
-      new Strategy(
-        {
-          clientID: options.clientID,
-          clientSecret: options.clientSecret,
-          callbackURL: "http://localhost:8080/login/facebook/return"
-        },
-        function(accessToken, refreshToken, profile, done) {
-          cb(profile);
-          return done(null, profile);
-        }
-      )
-    );
+exports.facebookAuth = function(saveUser) {
+  return function (option) {
+    return function () { // returns an effect
+      passport.use(
+        new Strategy(
+          {
+            clientID: options.clientID,
+            clientSecret: options.clientSecret,
+            callbackURL: 'http://localhost:8080/login/fb/return'
+          },
+          function(accessToken, refreshToken, profile, done) {
+            saveUser(profile); // brittle 
+            done(null, profile);
+          }
+        )
+      );
+    }
   }
 };
 
