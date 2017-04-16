@@ -1,58 +1,59 @@
 module App.Model.User where
--- import Database.Mongo.Bson.BsonValue as B
--- import Control.Monad.Aff (Aff)
--- import Control.Monad.Aff.Console (error, log)
--- import Control.Monad.Eff.Class (liftEff)
--- import Data.Argonaut (Json, decodeJson, jsonEmptyObject, (.?), (:=), (~>))
--- import Data.Argonaut.Decode (decodeJson)
--- import Data.Argonaut.Decode.Class (class DecodeJson)
--- import Data.Argonaut.Encode.Class (class EncodeJson)
--- import Data.Array (length)
--- import Data.Either (Either(..))
--- import Data.Maybe (Maybe(..))
--- import Database.Mongo.Mongo (DB, Database, Collection, collection, find, findOne, collect)
--- import Prelude (bind, ($), pure, Unit, (>))
--- import Unsafe.Coerce (unsafeCoerce)
---
---
--- newtype User = User
---   { id :: String
---   , username :: String
---   , email :: String
---   }
---
---
--- instance decodeJsonUser :: DecodeJson User where
---   decodeJson json = do
---     obj  <- decodeJson json
---     username <- obj .? "username"
---     email <-  obj .? "email"
---     id <-  obj .? "id"
---     pure $ User { id, username, email }
---
--- instance encodeJsonUser :: EncodeJson User where
---   encodeJson (User user)
---     =   "name" := user.username
---     ~>  "email" := user.email
---     ~>  "id" := user.id
---     ~> jsonEmptyObject
---
--- toJson :: forall a. a -> Json
--- toJson = unsafeCoerce
+import Database.Mongo.Bson.BsonValue as B
+import Control.Monad.Aff (Aff)
+import Control.Monad.Aff.Console (CONSOLE)
+import Control.Monad.Eff.Class (liftEff)
+import Control.Monad.Eff.Console (log)
+import Data.Argonaut (Json, encodeJson, jsonEmptyObject, (.?), (:=), (~>))
+import Data.Argonaut.Decode (decodeJson)
+import Data.Argonaut.Decode.Class (class DecodeJson)
+import Data.Argonaut.Encode.Class (class EncodeJson)
+import Data.List (List)
+import Database.Mongo.Mongo (DB, Database, collect, collection, find, findOne, insertOne)
+import Database.Mongo.Options (defaultInsertOptions)
+import Prelude (bind, ($), pure)
 
--- findUser :: forall e. Database -> Aff (db :: DB | e) (Maybe User)
--- findUser db = do
---   col <- collection "user" db
---   cur <- find [ "name" B.:= "Wow" ] [ "name" B.:= 1.0 ] col
---   res <- collect cur
---   let eitherUser = decodeJson $ toJson res
---   case eitherUser of
---     (Left err) -> pure $ Nothing
---     (Right user) -> pure $ (Just user)
+newtype User = User
+  { id :: String
+  , name :: String
+  , email :: String
+  }
 
--- findUser :: forall e. Database -> Aff (db :: DB | e) User
--- findUser database = do
---   col <- collection "events" database
---   cur <- findOne [ "name" B.:= "Wow" ] [ "name" B.:= 1.0 ] col
---   res <- collect cur
---   pure $ (res :: User)
+type Users = List User
+
+userCol = "users" :: String
+
+instance decodeJsonUser :: DecodeJson User where
+  decodeJson json = do
+    obj  <- decodeJson json
+    name <- obj .? "name"
+    email <-  obj .? "email"
+    id <-  obj .? "id"
+    pure $ User { id, name, email }
+
+instance encodeJsonUser :: EncodeJson User where
+  encodeJson (User user)
+    =   "name" := user.name
+    ~>  "email" := user.email
+    ~>  "id" := user.id
+    ~> jsonEmptyObject
+
+addUser :: forall e. User -> Database -> Aff (db :: DB | e) Json
+addUser user database = do
+  col <- collection userCol database
+  res <- insertOne user defaultInsertOptions col
+  pure $ encodeJson res
+
+findUser :: forall e. User -> Database -> Aff (db :: DB, console :: CONSOLE | e) User
+findUser (User user) database = do
+  col <- collection userCol database
+  userRes <- findOne [ "id" B.:= user.id ] [] col
+  pure $ (userRes :: User)
+
+findUsers :: forall e. Database -> Aff (db :: DB, console :: CONSOLE | e) Users
+findUsers database = do
+  liftEff $ log "getting user"
+  col <- collection userCol database
+  cur <- find [] [] col
+  res <- collect cur
+  pure $ (res :: Users)

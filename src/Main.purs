@@ -1,6 +1,8 @@
 module Main where
-import App.Foreign (jsonBodyParser, morgan)
-import App.Types (AppDb, DbRef)
+import App.Foreign as F
+import App.Config.Config (facebookStrategy)
+import App.Foreign (PASSPORT)
+import App.Types (AppDb, DbRef, SessionOptions, AppSetupEffs, AppEffs)
 import Control.Monad.Aff (attempt, launchAff)
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Class (liftEff)
@@ -9,10 +11,9 @@ import Control.Monad.Eff.Exception (EXCEPTION, error)
 import Control.Monad.Eff.Ref (REF, newRef, readRef, writeRef)
 import Data.Either (Either(..))
 import Database.Mongo.Mongo (DB, connect)
-import Node.Express.App (App, listenHttp, get, useExternal)
+import Node.Express.App (listenHttp, get, useExternal)
 import Node.Express.Handler (Handler)
 import Node.Express.Response (send)
-import Node.Express.Types (EXPRESS)
 import Node.HTTP (Server)
 import Prelude hiding (apply)
 
@@ -41,21 +42,21 @@ indexHandler dbRef = do
 helloHandler :: forall e. Handler e
 helloHandler = send "Make POST request with JSON body like {\"message\": <msg>} to get your message back"
 
+sessionOptions = { mongoUri: uri, secret: "Your cat" } :: SessionOptions
 
-appSetup :: forall e. DbRef -> App (console :: CONSOLE, db :: DB, ref :: REF | e)
+appSetup :: forall e. DbRef -> AppSetupEffs (passport :: PASSPORT | e)
 appSetup dbRef = do
-    useExternal           morgan
-    -- useExternal           cookieParser
-    useExternal           jsonBodyParser
-    -- useExternal           expressSession
-    -- useExternal           passportInitialize
-    -- useExternal           passportSession
+    useExternal           F.morgan
+    useExternal           F.cookieParser
+    useExternal           F.jsonBodyParser
+    useExternal           (F.expressSession sessionOptions)
+    useExternal           F.passportInitialize
+    liftEff $ F.facebookAuth facebookStrategy
     get  "/"              (indexHandler dbRef)
-    get  "/hello"         helloHandler
     -- post "/auth/fb"       (authHandler  db)
     -- get "/login/fb/return" authCallbackHandler -- succesful authentication
 
-main :: forall e. Eff (express :: EXPRESS, db :: DB, err :: EXCEPTION, ref :: REF, console :: CONSOLE | e) Server
+main :: forall e. AppEffs (passport :: PASSPORT | e) Server
 main = do
     dbRef <- initDbRef
     addDbRef dbRef
