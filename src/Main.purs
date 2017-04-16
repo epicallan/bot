@@ -1,11 +1,12 @@
 module Main where
-import App.Foreign (cookieParser, expressSession, jsonBodyParser, morgan, passportInitialize, passportSession)
+import App.Foreign (jsonBodyParser, morgan)
+import App.Types (AppDb, DbRef)
 import Control.Monad.Aff (attempt, launchAff)
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Class (liftEff)
 import Control.Monad.Eff.Console (CONSOLE, log)
 import Control.Monad.Eff.Exception (EXCEPTION, error)
-import Control.Monad.Eff.Ref (REF,writeRef,newRef)
+import Control.Monad.Eff.Ref (REF, newRef, readRef, writeRef)
 import Data.Either (Either(..))
 import Database.Mongo.Mongo (DB, connect)
 import Node.Express.App (App, listenHttp, get, useExternal)
@@ -14,7 +15,6 @@ import Node.Express.Response (send)
 import Node.Express.Types (EXPRESS)
 import Node.HTTP (Server)
 import Prelude hiding (apply)
-import App.Types (AppDb, DbRef)
 
 
 uri :: String
@@ -27,20 +27,31 @@ addDbRef:: forall e. DbRef -> Eff (db :: DB, err :: EXCEPTION, ref :: REF, conso
 addDbRef dbRef = void $ launchAff do
   eitherDatabase <- attempt $ connect uri
   liftEff $ writeRef dbRef (eitherDatabase :: AppDb)
-  liftEff $ log "added db"
+  liftEff $ log "connected to db"
 
-indexHandler :: forall e. Handler e
-indexHandler = send "Make POST request with JSON body like {\"message\": <msg>} to get your message back"
+indexHandler :: forall e. DbRef ->  Handler (ref :: REF, console :: CONSOLE | e)
+indexHandler dbRef = do
+  liftEff $ log "index handler"
+  db <- liftEff $ readRef dbRef
+  case db of
+    Left _ ->  send "Error connecting to Db"
+    Right _ -> send "connected to Db"
+
+
+helloHandler :: forall e. Handler e
+helloHandler = send "Make POST request with JSON body like {\"message\": <msg>} to get your message back"
+
 
 appSetup :: forall e. DbRef -> App (console :: CONSOLE, db :: DB, ref :: REF | e)
 appSetup dbRef = do
     useExternal           morgan
-    useExternal           cookieParser
+    -- useExternal           cookieParser
     useExternal           jsonBodyParser
-    useExternal           expressSession
-    useExternal           passportInitialize
-    useExternal           passportSession
-    get  "/"              indexHandler
+    -- useExternal           expressSession
+    -- useExternal           passportInitialize
+    -- useExternal           passportSession
+    get  "/"              (indexHandler dbRef)
+    get  "/hello"         helloHandler
     -- post "/auth/fb"       (authHandler  db)
     -- get "/login/fb/return" authCallbackHandler -- succesful authentication
 
