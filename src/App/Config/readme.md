@@ -1,1 +1,1 @@
-contains config file
+contains config file which is currently gitignored 

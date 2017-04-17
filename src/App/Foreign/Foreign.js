@@ -49,7 +49,12 @@ exports._facebookAuth = function(onAuthenticate) {
   return function (req) {
     return function (res) {
       return function (next) {
-        passport.authenticate('facebook', onAuthenticate)(req, res, next);
+        var options = {
+          session: false,
+          successRedirect: '/auth/fb/return',
+          failureRedirect: '/login'
+        };
+        passport.authenticate('facebook', options, onAuthenticate)(req, res, next);
       }
     }
   }

@@ -12,7 +12,7 @@ type AppDb = Either Error Database
 
 type DbRef = Ref AppDb
 
-type AppSetupEffs e = App (console :: CONSOLE, ref :: REF, db :: DB | e)
+type AppSetupEffs e = App (console :: CONSOLE, err :: EXCEPTION, ref :: REF, db :: DB | e)
 
 type AppEffs e a = Eff (err :: EXCEPTION, console :: CONSOLE, ref :: REF, express :: EXPRESS, db :: DB | e ) a
 
