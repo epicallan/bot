@@ -1,22 +1,14 @@
 module App.Handler.User where
-
-import App.Foreign (FbAuth)
-import App.Model.User (User, addUser)
+-- import App.Model.User (User, addUser)
 import App.Types (DbRef)
 import Control.Monad.Eff (Eff)
-import Control.Monad.Eff.Exception (message)
+-- import Control.Monad.Eff.Exception (message)
 import Data.Foreign (Foreign)
-import Data.Foreign.Null (Null(..), unNull)
-import Data.Maybe (maybe)
-import Database.Mongo.Bson.BsonValue ((:=))
-import Database.Mongo.Mongo (Collection, DB, Database, collect, collection, find)
-import Node.Express.Handler (Handler)
-import Node.Express.Response (redirect)
-import Prelude (Unit, unit)
-import Prelude (bind, ($))
-
--- parseRes :: Foreign -> Maybe User
--- parseRes = Nothing
+import Data.Foreign.Null (Null)
+-- import Data.Maybe (maybe)
+-- import Database.Mongo.Bson.BsonValue ((:=))
+import Database.Mongo.Mongo (DB)
+import Prelude (Unit, unit, ($), pure)
 
 authHandler :: forall e. DbRef -> Null String -> Foreign -> Eff (db :: DB | e) Unit
 authHandler dbRef err userRes = pure $ unit

@@ -2,6 +2,7 @@ module Main where
 import App.Foreign as F
 import App.Config.Config (facebookStrategy)
 import App.Foreign (PASSPORT)
+import App.Handler.User (authHandler)
 import App.Types (AppDb, DbRef, SessionOptions, AppSetupEffs, AppEffs)
 import Control.Monad.Aff (attempt, launchAff)
 import Control.Monad.Eff (Eff)
@@ -11,7 +12,7 @@ import Control.Monad.Eff.Exception (EXCEPTION, error)
 import Control.Monad.Eff.Ref (REF, newRef, readRef, writeRef)
 import Data.Either (Either(..))
 import Database.Mongo.Mongo (DB, connect)
-import Node.Express.App (get, listenHttp, post, use, useAt, useExternal)
+import Node.Express.App (get, listenHttp, useAt, useExternal)
 import Node.Express.Handler (Handler)
 import Node.Express.Response (send)
 import Node.HTTP (Server)
@@ -53,7 +54,7 @@ appSetup dbRef = do
     useExternal           F.passportInitialize
     liftEff $             F.facebookAuthStrategy facebookStrategy
     get  "/"              (indexHandler dbRef)
-    useAt "/auth/fb/"     (F.facebookAuth authHandler dbRef) 
+    useAt "/auth/fb/"     (F.facebookAuth dbRef authHandler)
 
 main :: forall e. AppEffs (passport :: PASSPORT | e) Server
 main = do
