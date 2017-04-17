@@ -11,7 +11,7 @@ import Control.Monad.Eff.Exception (EXCEPTION, error)
 import Control.Monad.Eff.Ref (REF, newRef, readRef, writeRef)
 import Data.Either (Either(..))
 import Database.Mongo.Mongo (DB, connect)
-import Node.Express.App (get, listenHttp, post, useAt, useExternal)
+import Node.Express.App (get, listenHttp, post, use, useAt, useExternal)
 import Node.Express.Handler (Handler)
 import Node.Express.Response (send)
 import Node.HTTP (Server)
@@ -52,10 +52,8 @@ appSetup dbRef = do
     useExternal           (F.expressSession sessionOptions)
     useExternal           F.passportInitialize
     liftEff $             F.facebookAuthStrategy facebookStrategy
-    useAt                 "auth/fb" F.facebookAuth
     get  "/"              (indexHandler dbRef)
-    -- post "/auth/fb"       authHandler
-    -- get "/login/fb/return" authCallbackHandler -- succesful authentication
+    useAt "/auth/fb/"     (F.facebookAuth authHandler dbRef) 
 
 main :: forall e. AppEffs (passport :: PASSPORT | e) Server
 main = do

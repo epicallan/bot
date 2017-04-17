@@ -1,12 +1,14 @@
-var passport = require("passport");
+var passport = require('passport');
 
-exports.jsonBodyParser = require("body-parser").json();
+var Strategy = require('passport-facebook').Strategy;
 
-exports.cookieParser = require("cookie-parser")();
+exports.jsonBodyParser = require('body-parser').json();
 
-var session = require("express-session");
+exports.cookieParser = require('cookie-parser')();
 
-var MongoStore = require("connect-mongo")(session);
+var session = require('express-session');
+
+var MongoStore = require('connect-mongo')(session);
 
 exports.expressSession = function(options) {
   return session({
@@ -16,13 +18,13 @@ exports.expressSession = function(options) {
     saveUninitialized: true,
     store: new MongoStore({
       url: options.mongoUri,
-      autoRemove: "interval",
+      autoRemove: 'interval',
       autoRemoveInterval: 30 // In minutes. Default
     })
   });
 };
 
-exports.morgan = require("morgan")("dev");
+exports.morgan = require('morgan')('dev');
 
 exports.facebookAuthStrategy = function(options) {
   return function() {
@@ -34,13 +36,21 @@ exports.facebookAuthStrategy = function(options) {
           callbackURL: options.callBack
         },
         function(accessToken, refreshToken, profile, done) {
-          return done(null, user);
+          return done(null, profile);
         }
       )
     );
   };
 };
 
-exports.facebookAuth = passport.authenticate('facebook');
-
 exports.passportInitialize = passport.initialize();
+
+exports._facebookAuth = function(onAuthenticate) {
+  return function (req) {
+    return function (res) {
+      return function (next) {
+        passport.authenticate('facebook', onAuthenticate)(req, res, next);
+      }
+    }
+  }
+};

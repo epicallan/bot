@@ -1,17 +1,20 @@
 module App.Model.User where
 import Database.Mongo.Bson.BsonValue as B
-import Control.Monad.Aff (Aff)
+import Control.Monad (void)
+import Control.Monad.Aff (Aff, launchAff)
 import Control.Monad.Aff.Console (CONSOLE)
+import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Class (liftEff)
 import Control.Monad.Eff.Console (log)
-import Data.Argonaut (Json, encodeJson, jsonEmptyObject, (.?), (:=), (~>))
+import Control.Monad.Eff.Exception (EXCEPTION)
+import Data.Argonaut (jsonEmptyObject, (.?), (:=), (~>))
 import Data.Argonaut.Decode (decodeJson)
 import Data.Argonaut.Decode.Class (class DecodeJson)
 import Data.Argonaut.Encode.Class (class EncodeJson)
 import Data.List (List)
 import Database.Mongo.Mongo (DB, Database, collect, collection, find, findOne, insertOne)
 import Database.Mongo.Options (defaultInsertOptions)
-import Prelude (bind, ($), pure)
+import Prelude (bind, pure, Unit, unit, ($))
 
 newtype User = User
   { id :: String
@@ -38,11 +41,12 @@ instance encodeJsonUser :: EncodeJson User where
     ~>  "id" := user.id
     ~> jsonEmptyObject
 
-addUser :: forall e. User -> Database -> Aff (db :: DB | e) Json
-addUser user database = do
-  col <- collection userCol database
-  res <- insertOne user defaultInsertOptions col
-  pure $ encodeJson res
+addUser :: forall e. Database -> User -> Eff (db :: DB, err :: EXCEPTION | e) Unit
+addUser database user =
+  void $ launchAff $ do
+    col <- collection userCol database
+    insertOne user defaultInsertOptions col
+    pure unit
 
 findUser :: forall e. User -> Database -> Aff (db :: DB, console :: CONSOLE | e) User
 findUser (User user) database = do
