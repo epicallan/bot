@@ -24,7 +24,7 @@ exports.expressSession = function(options) {
 
 exports.morgan = require("morgan")("dev");
 
-exports.facebookAuth = function(options) {
+exports.facebookAuthStrategy = function(options) {
   return function() {
     passport.use(
       new Strategy(
@@ -40,5 +40,7 @@ exports.facebookAuth = function(options) {
     );
   };
 };
+
+exports.facebookAuth = passport.authenticate('facebook');
 
 exports.passportInitialize = passport.initialize();

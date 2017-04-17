@@ -10,8 +10,8 @@ import Node.Express.Handler (Handler)
 import Prelude (Unit)
 import Prelude (bind, ($))
 
-authHandler :: forall e. DbRef -> Handler (db :: DB, passport :: PASSPORT | e)
-authHandler dbRef = do
+authHandler :: forall e. Handler (db :: DB, passport :: PASSPORT | e)
+authHandler = do
     liftEff $ log "index handler"
     eitherDb <- liftEff $ readRef dbRef
     case eitherDb of
