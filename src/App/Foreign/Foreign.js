@@ -27,34 +27,53 @@ exports.expressSession = function(options) {
 exports.morgan = require('morgan')('dev');
 
 exports.facebookAuthStrategy = function(options) {
-  return function() {
-    passport.use(
-      new Strategy(
-        {
-          clientID: options.clientID,
-          clientSecret: options.clientSecret,
-          callbackURL: options.callBack
-        },
-        function(accessToken, refreshToken, profile, done) {
-          return done(null, profile);
-        }
-      )
-    );
-  };
+  return function (cb) {
+    return function() {
+      passport.use(
+        new Strategy(
+          {
+            clientID: options.clientID,
+            clientSecret: options.clientSecret,
+            callbackURL: options.callBack
+          },
+          function(accessToken, refreshToken, profile, done) {
+            // console.log(accessToken);
+            return done(null, cb(accessToken, profile));
+          }
+        )
+      );
+    };
+  }
 };
 
 exports.passportInitialize = passport.initialize();
 
-exports._facebookAuth = function(onAuthenticate) {
+exports._facebookAuthReturn = function(onAuthenticate) {
   return function (req) {
     return function (res) {
       return function (next) {
-        var options = {
-          session: false,
-          successRedirect: '/auth/fb/return',
-          failureRedirect: '/login'
-        };
-        passport.authenticate('facebook', options, onAuthenticate)(req, res, next);
+        return function () {
+          var options = {
+            session: false,
+            successRedirect: '/auth/fb/return',
+            failureRedirect: '/login'
+          };
+          passport.authenticate('facebook', options, onAuthenticate)(req, res, next);
+        }
+      }
+    }
+  }
+};
+
+exports._facebookAuth = function (req) {
+  return function (res) {
+    return function (next) {
+      return function () {
+        // var options = {
+        //   successRedirect: '/auth/fb/return',
+        //   failureRedirect: '/login'
+        // };
+        passport.authenticate('facebook')(req, res, next);
       }
     }
   }

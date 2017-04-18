@@ -2,19 +2,17 @@ module Main where
 import App.Foreign as F
 import App.Config.Config (facebookStrategy)
 import App.Foreign (PASSPORT)
-import App.Handler.User (authHandler)
+import App.Handler.User (authHandler, loginHandler)
 import App.Types (AppDb, DbRef, SessionOptions, AppSetupEffs, AppEffs)
 import Control.Monad.Aff (attempt, launchAff)
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Class (liftEff)
 import Control.Monad.Eff.Console (CONSOLE, log)
 import Control.Monad.Eff.Exception (EXCEPTION, error)
-import Control.Monad.Eff.Ref (REF, newRef, readRef, writeRef)
+import Control.Monad.Eff.Ref (REF, newRef, writeRef)
 import Data.Either (Either(..))
 import Database.Mongo.Mongo (DB, connect)
 import Node.Express.App (get, listenHttp, useAt, useExternal)
-import Node.Express.Handler (Handler)
-import Node.Express.Response (send)
 import Node.HTTP (Server)
 import Prelude hiding (apply)
 
@@ -31,30 +29,21 @@ addDbRef dbRef = void $ launchAff do
   liftEff $ writeRef dbRef (eitherDatabase :: AppDb)
   liftEff $ log "connected to db"
 
-indexHandler :: forall e. DbRef ->  Handler (ref :: REF, console :: CONSOLE | e)
-indexHandler dbRef = do
-  liftEff $ log "index handler"
-  db <- liftEff $ readRef dbRef
-  case db of
-    Left _ ->  send "Error connecting to Db"
-    Right _ -> send "connected to Db"
-
-
-helloHandler :: forall e. Handler e
-helloHandler = send "Make POST request with JSON body like {\"message\": <msg>} to get your message back"
 
 sessionOptions = { mongoUri: uri, secret: "Your cat" } :: SessionOptions
 
 appSetup :: forall e. DbRef -> AppSetupEffs (passport :: PASSPORT | e)
 appSetup dbRef = do
-    useExternal           F.morgan
-    useExternal           F.cookieParser
-    useExternal           F.jsonBodyParser
-    useExternal           (F.expressSession sessionOptions)
-    useExternal           F.passportInitialize
-    liftEff $             F.facebookAuthStrategy facebookStrategy
-    get  "/"              (indexHandler dbRef)
-    useAt "/auth/fb/"     (F.facebookAuth dbRef authHandler)
+    useExternal             F.morgan
+    useExternal             F.cookieParser
+    useExternal             F.jsonBodyParser
+    useExternal             (F.expressSession sessionOptions)
+    useExternal             F.passportInitialize
+    liftEff $               F.facebookAuthStrategy facebookStrategy
+    get "/login"            loginHandler -- will redirect to login page
+    get "/auth/fb/"         F.facebookAuth
+    useAt "/auth/fb/return" (F.facebookAuthReturn dbRef authHandler)
+
 
 main :: forall e. AppEffs (passport :: PASSPORT | e) Server
 main = do

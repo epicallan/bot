@@ -24,13 +24,19 @@ foreign import expressSession :: forall e. SessionOptions -> Fn3 Request Respons
 
 foreign import passportInitialize :: forall e. Fn3 Request Response (ExpressM e Unit) (ExpressM e Unit)
 
-foreign import facebookAuthStrategy :: forall e. FacebookStrategy ->  Eff (passport:: PASSPORT | e) Unit
+foreign import facebookAuthStrategy :: forall e. FacebookStrategy -> Eff (passport:: PASSPORT | e) Unit
 
-foreign import _facebookAuth :: forall e. (Null String -> Foreign -> Eff e Unit)
+foreign import _facebookAuthReturn :: forall e. (Null String -> Foreign -> Eff e Unit)
                               -> Request -> Response -> (ExpressM e Unit) -> (ExpressM e Unit)
 
-facebookAuth :: forall e. DbRef
+foreign import _facebookAuth :: forall e. Request -> Response -> (ExpressM e Unit) -> (ExpressM e Unit)
+
+
+facebookAuthReturn :: forall e. DbRef
             -> (DbRef -> Null String -> Foreign -> Eff (db :: DB, ref :: REF | e) Unit)
             -> Handler (db :: DB, ref :: REF | e)
-facebookAuth dbRef authenticate = HandlerM \req resp next ->
-    liftEff $ _facebookAuth (\err user -> authenticate dbRef err user) req resp next
+facebookAuthReturn dbRef authenticate = HandlerM \req resp next ->
+    liftEff $ _facebookAuthReturn (\err user -> authenticate dbRef err user) req resp next
+
+facebookAuth :: forall e. Handler e
+facebookAuth = HandlerM \req resp next -> liftEff $ _facebookAuth req resp next

@@ -15,7 +15,12 @@ import Data.Foreign (Foreign, unsafeFromForeign)
 import Data.Foreign.Null (Null, unNull)
 import Data.Maybe (Maybe(..), maybe)
 import Database.Mongo.Mongo (DB)
+import Node.Express.Handler (Handler)
+import Node.Express.Response (send)
 import Prelude (Unit, ($), pure, bind, (<>))
+
+-- TODO  feels like i have a lot of boiler plate in here with all the json decoding should look into
+-- Getting rid most of it
 
 newtype Email = Email
   { email :: String
@@ -27,6 +32,7 @@ newtype UserRaw = UserRaw
   , name :: String
   , emails :: Array Email
   }
+
 instance decodeJsonEmail :: DecodeJson Email where
   decodeJson json = do
     obj  <- decodeJson json
@@ -53,9 +59,8 @@ parseUserRes userRes =
         Right (UserRaw userRaw) -> maybe Nothing (addEmail userRaw) $ head userRaw.emails
         where addEmail u (Email e) = Just (User {id : u.id, name : u.name, email : e.email})
 
-
-
--- TODO change type signature so that we can throw error to be caught by error handdler
+-- TODO change type signature so that we can throw error to be caught by a error handdler
+-- middleware
 authHandler :: forall e. DbRef -> Null String -> Foreign
             -> Eff (ref :: REF, console :: CONSOLE, err :: EXCEPTION, db :: DB | e) Unit
 authHandler dbRef nullableError userRes = do
@@ -67,3 +72,8 @@ authHandler dbRef nullableError userRes = do
           case eitherDb of
             Left err -> log $ "Error connecting to the database for authentication " <> message err
             Right db -> maybe (log $ "UnExpected user parse error") (addUser db) $ parseUserRes userRes
+
+
+
+loginHandler :: forall e. Handler e
+loginHandler = send "Please go and login" -- TODO redirect to login page on front end app
