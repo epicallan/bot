@@ -26,7 +26,7 @@ exports.expressSession = function(options) {
 
 exports.morgan = require('morgan')('dev');
 
-exports.facebookAuthStrategy = function(options) {
+exports._facebookAuthStrategy = function(options) {
   return function (cb) {
     return function() {
       passport.use(
@@ -55,10 +55,10 @@ exports._facebookAuthReturn = function(onAuthenticate) {
         return function () {
           var options = {
             session: false,
-            successRedirect: '/auth/fb/return',
+            successRedirect: '/login',
             failureRedirect: '/login'
           };
-          passport.authenticate('facebook', options, onAuthenticate)(req, res, next);
+          passport.authenticate('facebook', options)(req, res, next);
         }
       }
     }
@@ -69,10 +69,6 @@ exports._facebookAuth = function (req) {
   return function (res) {
     return function (next) {
       return function () {
-        // var options = {
-        //   successRedirect: '/auth/fb/return',
-        //   failureRedirect: '/login'
-        // };
         passport.authenticate('facebook')(req, res, next);
       }
     }

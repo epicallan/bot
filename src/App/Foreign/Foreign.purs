@@ -1,6 +1,6 @@
 module App.Foreign where
 
-import App.Config.Config (FacebookStrategy)
+import App.Config.Config (FacebookStrategy, facebookStrategy)
 import App.Types (SessionOptions, DbRef)
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Class (liftEff)
@@ -24,19 +24,23 @@ foreign import expressSession :: forall e. SessionOptions -> Fn3 Request Respons
 
 foreign import passportInitialize :: forall e. Fn3 Request Response (ExpressM e Unit) (ExpressM e Unit)
 
-foreign import facebookAuthStrategy :: forall e. FacebookStrategy -> Eff (passport:: PASSPORT | e) Unit
+foreign import _facebookAuthStrategy :: forall e. FacebookStrategy
+                                    -> (String -> Foreign -> Eff (db :: DB, ref :: REF | e) Foreign)
+                                    -> Eff (passport:: PASSPORT, db :: DB, ref :: REF  | e) Unit
 
-foreign import _facebookAuthReturn :: forall e. (Null String -> Foreign -> Eff e Unit)
-                              -> Request -> Response -> (ExpressM e Unit) -> (ExpressM e Unit)
+foreign import _facebookAuthReturn :: forall e. Request -> Response -> (ExpressM e Unit) -> (ExpressM e Unit)
 
 foreign import _facebookAuth :: forall e. Request -> Response -> (ExpressM e Unit) -> (ExpressM e Unit)
 
+facebookStrategy :: forall e. DbRef -> FacebookStrategy
+                (DbRef -> String -> Foreign -> Eff (db :: DB, ref :: REF | e) Unit)
+                -> Eff (passport:: PASSPORT, db :: DB, ref :: REF  | e) Unit
 
-facebookAuthReturn :: forall e. DbRef
-            -> (DbRef -> Null String -> Foreign -> Eff (db :: DB, ref :: REF | e) Unit)
-            -> Handler (db :: DB, ref :: REF | e)
-facebookAuthReturn dbRef authenticate = HandlerM \req resp next ->
-    liftEff $ _facebookAuthReturn (\err user -> authenticate dbRef err user) req resp next
+facebookStrategy fbstrategy dbRef authenticate =
+  _facebookAuthStrategy fbstrategy (\accessToken user -> authenticate dbRef accessToken user)
+
+facebookAuthReturn :: forall e. Handler e
+facebookAuthReturn = HandlerM \req resp next -> liftEff $ _facebookAuthReturn req resp next
 
 facebookAuth :: forall e. Handler e
 facebookAuth = HandlerM \req resp next -> liftEff $ _facebookAuth req resp next
