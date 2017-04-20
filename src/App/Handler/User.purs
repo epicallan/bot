@@ -1,6 +1,6 @@
 module App.Handler.User where
 import App.Model.User (User(..), addUser)
-import App.Types (DbRef)
+import App.Types (DbRef,JWToken)
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Class (liftEff)
 import Control.Monad.Eff.Console (CONSOLE, log)
@@ -61,19 +61,23 @@ parseUserRes userRes =
 
 -- TODO change type signature so that we can throw error to be caught by a error handdler
 -- middleware
-authHandler :: forall e. DbRef -> Null String -> Foreign
-            -> Eff (ref :: REF, console :: CONSOLE, err :: EXCEPTION, db :: DB | e) Unit
-authHandler dbRef nullableError userRes = do
-      let maybeError = unNull nullableError
-      case maybeError of
-        Just err -> liftEff $ log $ "Unexpected authentication Error"
-        Nothing -> do
-          eitherDb <- liftEff $ readRef dbRef
-          case eitherDb of
-            Left err -> log $ "Error connecting to the database for authentication " <> message err
-            Right db -> maybe (log $ "UnExpected user parse error") (addUser db) $ parseUserRes userRes
+jwtoken = { token : "null"} :: JWToken
+
+authHandler :: forall e. DbRef -> Foreign -> AuthEffs e JWToken
+authHandler dbRef userRes = do
+    eitherDb <- liftEff $ readRef dbRef
+    case eitherDb of
+      Left err -> do
+          liftEff $  log $ "Error connecting to the database for authentication " <> message err
+          jwtoken
+      Right _ -> jwtoken
 
 
 
 loginHandler :: forall e. Handler e
 loginHandler = send "Please go and login" -- TODO redirect to login page on front end app
+
+
+
+indexHandler :: forall e. Handler e
+indexHandler = send "You have been signed up" -- TODO redirect to login page on front end app

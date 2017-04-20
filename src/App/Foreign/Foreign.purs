@@ -1,14 +1,13 @@
 module App.Foreign where
 
-import App.Config.Config (FacebookStrategy, facebookStrategy)
-import App.Types (SessionOptions, DbRef)
+import App.Config.Config (GoogleStrategy)
+import App.Model.User (User(..))
+import App.Types (JWToken, DbRef)
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Class (liftEff)
-import Control.Monad.Eff.Ref (REF)
+import Control.Monad.Eff.Console (CONSOLE)
 import Data.Foreign (Foreign)
-import Data.Foreign.Null (Null)
 import Data.Function.Uncurried (Fn3)
-import Database.Mongo.Mongo (DB)
 import Node.Express.Handler (Handler, HandlerM(..))
 import Node.Express.Types (ExpressM, Request, Response)
 import Prelude (Unit, ($))
@@ -20,27 +19,22 @@ foreign import morgan :: forall e. Fn3 Request Response (ExpressM e Unit) (Expre
 
 foreign import cookieParser :: forall e. Fn3 Request Response (ExpressM e Unit) (ExpressM e Unit)
 
-foreign import expressSession :: forall e. SessionOptions -> Fn3 Request Response (ExpressM e Unit) (ExpressM e Unit)
 
 foreign import passportInitialize :: forall e. Fn3 Request Response (ExpressM e Unit) (ExpressM e Unit)
 
-foreign import _facebookAuthStrategy :: forall e. FacebookStrategy
-                                    -> (String -> Foreign -> Eff (db :: DB, ref :: REF | e) Foreign)
-                                    -> Eff (passport:: PASSPORT, db :: DB, ref :: REF  | e) Unit
+foreign import googleAuthStrategy :: forall e. GoogleStrategy
+                                    -> Eff (passport:: PASSPORT, console :: CONSOLE | e) Unit
 
-foreign import _facebookAuthReturn :: forall e. Request -> Response -> (ExpressM e Unit) -> (ExpressM e Unit)
+foreign import _googleAuthReturn :: forall e. (DbRef -> Foreign ->  AuthEffs e JWToken)
+                                  Request -> Response -> (ExpressM e Unit) -> (ExpressM e Unit)
 
-foreign import _facebookAuth :: forall e. Request -> Response -> (ExpressM e Unit) -> (ExpressM e Unit)
+foreign import _googleAuth :: forall e. Request -> Response -> (ExpressM e Unit) -> (ExpressM e Unit)
 
-facebookStrategy :: forall e. DbRef -> FacebookStrategy
-                (DbRef -> String -> Foreign -> Eff (db :: DB, ref :: REF | e) Unit)
-                -> Eff (passport:: PASSPORT, db :: DB, ref :: REF  | e) Unit
+googleAuthReturn :: forall e. DBRef -> (DbRef -> Foreign -> AuthEffs e JWToken) -> Handler e
+googleAuthReturn dbRef createOrFindUser =
+  HandlerM \req resp next -> liftEff $ _googleAuthReturn (createOrFindUser dbRef)  req resp next
 
-facebookStrategy fbstrategy dbRef authenticate =
-  _facebookAuthStrategy fbstrategy (\accessToken user -> authenticate dbRef accessToken user)
+googleAuth :: forall e. Handler e
+googleAuth = HandlerM \req resp next -> liftEff $ _googleAuth req resp next
 
-facebookAuthReturn :: forall e. Handler e
-facebookAuthReturn = HandlerM \req resp next -> liftEff $ _facebookAuthReturn req resp next
-
-facebookAuth :: forall e. Handler e
-facebookAuth = HandlerM \req resp next -> liftEff $ _facebookAuth req resp next
+foreign import createJwtToken :: JWTSecret -> User -> String

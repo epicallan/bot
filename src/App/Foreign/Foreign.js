@@ -1,76 +1,67 @@
 var passport = require('passport');
 
-var Strategy = require('passport-facebook').Strategy;
+var R = require('ramda');
+
+var Strategy = require('passport-google-oauth20').Strategy;
 
 exports.jsonBodyParser = require('body-parser').json();
 
 exports.cookieParser = require('cookie-parser')();
 
-var session = require('express-session');
-
-var MongoStore = require('connect-mongo')(session);
-
-exports.expressSession = function(options) {
-  return session({
-    secret: options.secret, // could use a process.env.secret
-    resave: true,
-    maxAge: 6000000,
-    saveUninitialized: true,
-    store: new MongoStore({
-      url: options.mongoUri,
-      autoRemove: 'interval',
-      autoRemoveInterval: 30 // In minutes. Default
-    })
-  });
-};
-
 exports.morgan = require('morgan')('dev');
 
-exports._facebookAuthStrategy = function(options) {
-  return function (cb) {
-    return function() {
-      passport.use(
-        new Strategy(
-          {
-            clientID: options.clientID,
-            clientSecret: options.clientSecret,
-            callbackURL: options.callBack
-          },
-          function(accessToken, refreshToken, profile, done) {
-            // console.log(accessToken);
-            return done(null, cb(accessToken, profile));
-          }
-        )
-      );
-    };
-  }
+exports.googleAuthStrategy = function(options) {
+  return function() {
+    passport.use(
+      new Strategy(
+        {
+          clientID: options.clientID,
+          clientSecret: options.clientSecret,
+          callbackURL: options.callBack
+        },
+        function(accessToken, refreshToken, profile, done) {
+          // console.log('googleStrategy', accessToken, refreshToken, profile);
+          done(null, profile);
+        }
+      )
+    );
+  };
 };
 
 exports.passportInitialize = passport.initialize();
 
-exports._facebookAuthReturn = function(onAuthenticate) {
-  return function (req) {
-    return function (res) {
-      return function (next) {
-        return function () {
-          var options = {
-            session: false,
-            successRedirect: '/login',
-            failureRedirect: '/login'
-          };
-          passport.authenticate('facebook', options)(req, res, next);
-        }
-      }
-    }
-  }
+exports._googleAuthReturn = function(createOrFindUser) {
+  return function(req) {
+    return function(res) {
+      return function(next) {
+        return function() {
+          passport.authenticate('google', function(err, user) {
+            console.log('err', err, 'user', user);
+            if (err) return res.status(500).json({ 'authentication error': err });
+            res.status(200).json(createOrFindUser(user));
+          })(req, res, next);
+        };
+      };
+    };
+  };
 };
 
-exports._facebookAuth = function (req) {
-  return function (res) {
-    return function (next) {
-      return function () {
-        passport.authenticate('facebook')(req, res, next);
-      }
-    }
-  }
+exports._googleAuth = function(req) {
+  return function(res) {
+    return function(next) {
+      return function() {
+        passport.authenticate('google', { session: false, scope: ['email'] })(
+          req,
+          res,
+          next
+        );
+      };
+    };
+  };
 };
+
+exports.createJwtToken = function(secret) {
+  return function(user) {
+    return require('jsonwebtoken').sign(R.omit(['name', 'email'], user), secret, { expiresIn: 60 * 60 * 5 })
+  }
+}

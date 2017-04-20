@@ -16,7 +16,6 @@ type AppSetupEffs e = App (console :: CONSOLE, err :: EXCEPTION, ref :: REF, db 
 
 type AppEffs e a = Eff (err :: EXCEPTION, console :: CONSOLE, ref :: REF, express :: EXPRESS, db :: DB | e ) a
 
-type SessionOptions
-  = { mongoUri :: String
-    , secret :: String
-    }
+type AuthEffs e a = Eff (ref :: REF, console :: CONSOLE, err :: EXCEPTION, db :: DB | e) a
+
+type JWToken = { token :: String }

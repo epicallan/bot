@@ -1,8 +1,8 @@
 module Main where
 import App.Foreign as F
-import App.Config.Config (facebookStrategy)
+import App.Config.Config (googleStrategy)
 import App.Foreign (PASSPORT)
-import App.Handler.User (authHandler, loginHandler)
+import App.Handler.User (authHandler, indexHandler, loginHandler)
 import App.Types (AppDb, DbRef, SessionOptions, AppSetupEffs, AppEffs)
 import Control.Monad.Aff (attempt, launchAff)
 import Control.Monad.Eff (Eff)
@@ -12,7 +12,7 @@ import Control.Monad.Eff.Exception (EXCEPTION, error)
 import Control.Monad.Eff.Ref (REF, newRef, writeRef)
 import Data.Either (Either(..))
 import Database.Mongo.Mongo (DB, connect)
-import Node.Express.App (get, listenHttp, useAt, useExternal)
+import Node.Express.App (get, listenHttp, useExternal)
 import Node.HTTP (Server)
 import Prelude hiding (apply)
 
@@ -34,15 +34,16 @@ sessionOptions = { mongoUri: uri, secret: "Your cat" } :: SessionOptions
 
 appSetup :: forall e. DbRef -> AppSetupEffs (passport :: PASSPORT | e)
 appSetup dbRef = do
-    useExternal             F.morgan
-    useExternal             F.cookieParser
-    useExternal             F.jsonBodyParser
-    useExternal             (F.expressSession sessionOptions)
-    useExternal             F.passportInitialize
-    liftEff $               F.facebookAuthStrategy facebookStrategy
-    get "/login"            loginHandler -- will redirect to login page
-    get "/auth/fb/"         F.facebookAuth
-    useAt "/auth/fb/return" (F.facebookAuthReturn dbRef authHandler)
+    useExternal               F.morgan
+    useExternal               F.cookieParser
+    useExternal               F.jsonBodyParser
+    useExternal               (F.expressSession sessionOptions)
+    useExternal               F.passportInitialize
+    liftEff $                 F.googleAuthStrategy googleStrategy
+    get "/login"              loginHandler
+    get "/"                   indexHandler
+    get "/auth/google/"       F.googleAuth
+    get "/auth/google/return" F.googleAuthReturn authHandler dbRef
 
 
 main :: forall e. AppEffs (passport :: PASSPORT | e) Server
