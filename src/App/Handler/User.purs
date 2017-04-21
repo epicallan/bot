@@ -1,23 +1,22 @@
 module App.Handler.User where
+import App.Config.Config (jwtSecret)
 import App.Model.User (User(..), addUser)
-import App.Types (DbRef, JWToken, AuthEffs)
-import Control.Monad.Eff (Eff)
+import App.Foreign(createJwtToken)
+import App.Types (JWToken, AuthEffs, DbRef)
 import Control.Monad.Eff.Class (liftEff)
-import Control.Monad.Eff.Console (CONSOLE, log)
-import Control.Monad.Eff.Exception (EXCEPTION, message)
-import Control.Monad.Eff.Ref (REF, readRef)
+import Control.Monad.Eff.Console (log)
+import Control.Monad.Eff.Exception (message)
+import Control.Monad.Eff.Ref (readRef)
 import Data.Argonaut (Json, (.?))
 import Data.Argonaut.Decode (decodeJson)
 import Data.Argonaut.Decode.Class (class DecodeJson)
 import Data.Array (head)
 import Data.Either (Either(..))
 import Data.Foreign (Foreign, unsafeFromForeign)
-import Data.Foreign.Null (Null, unNull)
 import Data.Maybe (Maybe(..), maybe)
-import Database.Mongo.Mongo (DB)
 import Node.Express.Handler (Handler)
 import Node.Express.Response (send)
-import Prelude (Unit, ($), pure, bind, (<>))
+import Prelude (($), pure, bind, (<>))
 
 -- TODO  feels like i have a lot of boiler plate in here with all the json decoding should look into
 -- Getting rid most of it
@@ -64,15 +63,19 @@ parseUserRes userRes =
 jwtoken = { token : "null"} :: JWToken
 
 authHandler :: forall e. DbRef -> Foreign -> AuthEffs e JWToken
-authHandler dbRef userRes = do
+authHandler dbRef userPayload = do
     eitherDb <- liftEff $ readRef dbRef
     case eitherDb of
       Left err -> do
         liftEff $ log $ "Error connecting to the database for authentication " <> message err
-        jwtoken
-      Right _ -> jwtoken
-
-
+        pure jwtoken
+      Right db -> do
+        let maybeUser = parseUserRes userPayload
+        case maybeUser of
+          Nothing -> pure jwtoken
+          Just user -> do
+            addUser db user
+            pure { token : createJwtToken jwtSecret user }
 
 loginHandler :: forall e. Handler e
 loginHandler = send "Please go and login" -- TODO redirect to login page on front end app

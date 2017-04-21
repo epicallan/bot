@@ -3,7 +3,7 @@ import App.Foreign as F
 import App.Config.Config (googleStrategy)
 import App.Foreign (PASSPORT)
 import App.Handler.User (authHandler, indexHandler, loginHandler)
-import App.Types (AppDb, DbRef, SessionOptions, AppSetupEffs, AppEffs)
+import App.Types (AppDb, DbRef, AppSetupEffs, AppEffs)
 import Control.Monad.Aff (attempt, launchAff)
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Class (liftEff)
@@ -30,14 +30,11 @@ addDbRef dbRef = void $ launchAff do
   liftEff $ log "connected to db"
 
 
-sessionOptions = { mongoUri: uri, secret: "Your cat" } :: SessionOptions
-
 appSetup :: forall e. DbRef -> AppSetupEffs (passport :: PASSPORT | e)
 appSetup dbRef = do
     useExternal               F.morgan
     useExternal               F.cookieParser
     useExternal               F.jsonBodyParser
-    useExternal               (F.expressSession sessionOptions)
     useExternal               F.passportInitialize
     liftEff $                 F.googleAuthStrategy googleStrategy
     get "/login"              loginHandler
