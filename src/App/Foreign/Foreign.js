@@ -36,7 +36,7 @@ exports._googleAuthReturn = function(createOrFindUser) {
       return function(next) {
         return function() {
           passport.authenticate('google', function(err, user) {
-            console.log('err', err, 'user', user);
+            // console.log('err', err, 'user', user);
             if (err) return res.status(500).json({ 'authentication error': err });
             res.status(200).json(createOrFindUser(user));
           })(req, res, next);

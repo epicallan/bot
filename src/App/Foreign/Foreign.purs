@@ -31,8 +31,8 @@ foreign import _googleAuthReturn :: forall e. (Foreign ->  AuthEffs e JWToken)
 foreign import _googleAuth :: forall e. Request -> Response -> (ExpressM e Unit) -> (ExpressM e Unit)
 
 googleAuthReturn :: forall e. (DbRef -> Foreign -> AuthEffs e JWToken) -> DbRef -> Handler e
-googleAuthReturn createOrFindUser dbRef =
-  HandlerM \req resp next -> liftEff $ _googleAuthReturn (createOrFindUser dbRef) req resp next
+googleAuthReturn authHandler dbRef =
+  HandlerM \req resp next -> liftEff $ _googleAuthReturn (\userF -> authHandler dbRef userF) req resp next
 
 googleAuth :: forall e. Handler e
 googleAuth = HandlerM \req resp next -> liftEff $ _googleAuth req resp next
