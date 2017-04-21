@@ -1,6 +1,6 @@
 module App.Handler.User where
 import App.Model.User (User(..), addUser)
-import App.Types (DbRef,JWToken)
+import App.Types (DbRef, JWToken, AuthEffs)
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Class (liftEff)
 import Control.Monad.Eff.Console (CONSOLE, log)
@@ -68,8 +68,8 @@ authHandler dbRef userRes = do
     eitherDb <- liftEff $ readRef dbRef
     case eitherDb of
       Left err -> do
-          liftEff $  log $ "Error connecting to the database for authentication " <> message err
-          jwtoken
+        liftEff $ log $ "Error connecting to the database for authentication " <> message err
+        jwtoken
       Right _ -> jwtoken
 
 
