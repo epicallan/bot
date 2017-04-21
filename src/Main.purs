@@ -40,7 +40,7 @@ appSetup dbRef = do
     get "/login"              loginHandler
     get "/"                   indexHandler
     get "/auth/google/"       F.googleAuth
-    get "/auth/google/return" F.googleAuthReturn authHandler dbRef
+    -- get "/auth/google/return" F.googleAuthReturn authHandler dbRef
 
 
 main :: forall e. AppEffs (passport :: PASSPORT | e) Server
