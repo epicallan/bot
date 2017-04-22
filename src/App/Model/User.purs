@@ -1,30 +1,33 @@
 module App.Model.User where
 import Database.Mongo.Bson.BsonValue as B
 import Control.Monad (void)
-import Control.Monad.Aff (Aff, launchAff)
+import Control.Monad.Aff (Aff, attempt, launchAff)
 import Control.Monad.Aff.Console (CONSOLE)
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Class (liftEff)
 import Control.Monad.Eff.Console (log)
-import Control.Monad.Eff.Exception (EXCEPTION)
+import Control.Monad.Eff.Exception (EXCEPTION, Error)
 import Data.Argonaut (jsonEmptyObject, (.?), (:=), (~>))
 import Data.Argonaut.Decode (decodeJson)
 import Data.Argonaut.Decode.Class (class DecodeJson)
 import Data.Argonaut.Encode.Class (class EncodeJson)
-import Data.List (List)
+import Data.Either (Either(..), either)
+import Data.Maybe (Maybe(..))
 import Database.Mongo.Mongo (DB, Database, collect, collection, find, findOne, insertOne)
 import Database.Mongo.Options (defaultInsertOptions)
-import Prelude (bind, pure, Unit, unit, ($))
+import Prelude (Unit, bind, pure, unit, ($), (<<<), const)
+import Data.Array hiding (find)
 
 newtype User = User
   { id :: String
-  , name :: String
+  , name :: Maybe String
   , email :: String
-  , photo :: String
-  , gender :: String
+  , photo :: Maybe String
+  , gender :: Maybe String
   }
 
-type Users = List User
+type Users = Array User
+type UserId = String
 
 userCol = "users" :: String
 
@@ -47,23 +50,28 @@ instance encodeJsonUser :: EncodeJson User where
     ~>  "id" := user.id
     ~> jsonEmptyObject
 
-addUser :: forall e. Database -> User -> Eff (db :: DB, err :: EXCEPTION | e) Unit
-addUser database user =
+-- | creates user if user doesnt exit
+createUser :: forall e. Database -> User -> Eff (db :: DB, err :: EXCEPTION | e) Unit
+createUser database user@(User u) =
   void $ launchAff $ do
     col <- collection userCol database
-    insertOne user defaultInsertOptions col
-    pure unit
+    (eitherUser :: Either Error User) <- attempt $ findOne [ "id" B.:= u.id ] [] col
+    case eitherUser of
+      Left _ -> do
+        insertOne user defaultInsertOptions col
+        pure unit
+      Right _ -> pure unit
 
-findUser :: forall e. User -> Database -> Aff (db :: DB, console :: CONSOLE | e) User
-findUser (User user) database = do
+findUser :: forall e. UserId -> Database -> Aff (db :: DB, console :: CONSOLE | e) (Maybe User)
+findUser userId database = do
   col <- collection userCol database
-  userRes <- findOne [ "id" B.:= user.id ] [] col
-  pure $ (userRes :: User)
+  (eitherUser :: Either Error User) <- attempt $ findOne [ "id" B.:= userId ] [] col
+  either (pure <<< const Nothing) (pure <<< Just) eitherUser
 
-findUsers :: forall e. Database -> Aff (db :: DB, console :: CONSOLE | e) Users
+findUsers :: forall e. Database -> Aff (db :: DB, console :: CONSOLE | e) (Maybe Users)
 findUsers database = do
   liftEff $ log "getting user"
   col <- collection userCol database
   cur <- find [] [] col
-  res <- collect cur
-  pure $ (res :: Users)
+  (eitherUsers :: Either Error Users) <- attempt $ collect cur
+  either (pure <<< const Nothing) (pure <<< Just) eitherUsers

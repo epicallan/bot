@@ -1,6 +1,6 @@
 module App.Handler.User where
 import App.Config.Config (jwtSecret)
-import App.Model.User (User, addUser)
+import App.Model.User (User, createUser)
 import App.Foreign(createJwtToken)
 import App.Types (JWToken, AuthEffs, DbRef)
 import Control.Monad.Eff.Class (liftEff)
@@ -23,13 +23,11 @@ parseUserRes :: Foreign -> Either String User
 parseUserRes userRes = decodeJson $ unsafelyToJson userRes
 
 
--- TODO change type signature so that we can throw error to be caught by a error handdler
--- middleware
+-- this could be turned into a maybe but will require interface with the returned values in the js file
 jwtoken = { token : "null"} :: JWToken
 
 authHandler :: forall e. DbRef -> Foreign -> AuthEffs e JWToken
 authHandler dbRef userPayload = do
-    liftEff $ log $ "In authHandler"
     eitherDb <- liftEff $ readRef dbRef
     case eitherDb of
       Left err -> do
@@ -37,14 +35,12 @@ authHandler dbRef userPayload = do
         pure jwtoken
       Right db -> do
         let eitherUser = parseUserRes userPayload
-        liftEff $ log $ "decoded user"
         case eitherUser of
           Left err -> do
-            liftEff $ log $ "User parse error" <> err
+            liftEff $ log $ "User parse error: " <> err
             pure jwtoken
           Right user -> do
-            liftEff $ log $ "adding user to db"
-            addUser db user
+            liftEff $ createUser db user
             pure { token : createJwtToken jwtSecret user }
 
 loginHandler :: forall e. Handler e
