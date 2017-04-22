@@ -6,6 +6,7 @@ import Control.Monad.Eff.Ref (REF, Ref)
 import Data.Either (Either)
 import Database.Mongo.Mongo (DB, Database)
 import Node.Express.App (App)
+import Node.Express.Handler (Handler)
 import Node.Express.Types (EXPRESS)
 
 type AppDb = Either Error Database
@@ -17,5 +18,7 @@ type AppSetupEffs e = App (console :: CONSOLE, err :: EXCEPTION, ref :: REF, db 
 type AppEffs e a = Eff (err :: EXCEPTION, console :: CONSOLE, ref :: REF, express :: EXPRESS, db :: DB | e ) a
 
 type AuthEffs e a = Eff (ref :: REF, console :: CONSOLE, err :: EXCEPTION, db :: DB | e) a
+
+type HandlerAuthEffs e = Handler (ref :: REF, console :: CONSOLE, err :: EXCEPTION, db :: DB | e)
 
 type JWToken = { token :: String }

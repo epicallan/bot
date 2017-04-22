@@ -20,6 +20,8 @@ newtype User = User
   { id :: String
   , name :: String
   , email :: String
+  , photo :: String
+  , gender :: String
   }
 
 type Users = List User
@@ -32,12 +34,16 @@ instance decodeJsonUser :: DecodeJson User where
     name <- obj .? "name"
     email <-  obj .? "email"
     id <-  obj .? "id"
-    pure $ User { id, name, email }
+    photo <- obj .? "photo"
+    gender <- obj .? "gender"
+    pure $ User { id, name, email, gender, photo }
 
 instance encodeJsonUser :: EncodeJson User where
   encodeJson (User user)
     =   "name" := user.name
     ~>  "email" := user.email
+    ~>  "photo" := user.photo
+    ~>  "gender" := user.gender
     ~>  "id" := user.id
     ~> jsonEmptyObject
 

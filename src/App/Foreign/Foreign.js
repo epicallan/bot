@@ -30,15 +30,27 @@ exports.googleAuthStrategy = function(options) {
 
 exports.passportInitialize = passport.initialize();
 
+var createUserObj = function(user) {
+  return {
+    name: user.displayName,
+    id: user.id,
+    gender: user.gender,
+    photo: user.photos[0].value,
+    email: user.emails[0].value
+  };
+};
+
 exports._googleAuthReturn = function(createOrFindUser) {
   return function(req) {
     return function(res) {
       return function(next) {
         return function() {
           passport.authenticate('google', function(err, user) {
-            // console.log('err', err, 'user', user);
             if (err) return res.status(500).json({ 'authentication error': err });
-            res.status(200).json(createOrFindUser(user));
+            if (user) {
+              var userProfile = createUserObj(user);
+              res.status(200).json(createOrFindUser(userProfile)());
+            }
           })(req, res, next);
         };
       };
@@ -62,6 +74,10 @@ exports._googleAuth = function(req) {
 
 exports.createJwtToken = function(secret) {
   return function(user) {
-    return require('jsonwebtoken').sign(R.omit(['name', 'email'], user), secret, { expiresIn: 60 * 60 * 5 })
-  }
-}
+    return require('jsonwebtoken').sign(
+      R.omit(['name', 'email'], user),
+      secret,
+      { expiresIn: 60 * 60 * 5 }
+    );
+  };
+};
