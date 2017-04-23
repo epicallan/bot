@@ -1,8 +1,8 @@
 module Main where
 import App.Foreign as F
-import App.Config.Config (googleStrategy)
+import App.Config.Config (googleStrategy, jwtSecret)
 import App.Foreign (PASSPORT)
-import App.Handler.User (authHandler, indexHandler, loginHandler)
+import App.Handler.User (authHandler, indexHandler, loginHandler, protectedHandler)
 import App.Types (AppDb, DbRef, AppSetupEffs, AppEffs)
 import Control.Monad.Aff (attempt, launchAff)
 import Control.Monad.Eff (Eff)
@@ -12,7 +12,7 @@ import Control.Monad.Eff.Exception (EXCEPTION, error)
 import Control.Monad.Eff.Ref (REF, newRef, writeRef)
 import Data.Either (Either(..))
 import Database.Mongo.Mongo (DB, connect)
-import Node.Express.App (get, listenHttp, useExternal)
+import Node.Express.App (get, listenHttp, useAt, useExternal)
 import Node.HTTP (Server)
 import Prelude hiding (apply)
 
@@ -33,7 +33,6 @@ addDbRef dbRef = void $ launchAff do
 appSetup :: forall e. DbRef -> AppSetupEffs (passport :: PASSPORT | e)
 appSetup dbRef = do
     useExternal               F.morgan
-    useExternal               F.cookieParser
     useExternal               F.jsonBodyParser
     useExternal               F.passportInitialize
     liftEff $                 F.googleAuthStrategy googleStrategy
@@ -41,6 +40,9 @@ appSetup dbRef = do
     get "/"                   indexHandler
     get "/auth/google/"       F.googleAuth
     get "/auth/google/return" (F.googleAuthReturn authHandler dbRef)
+    useAt "/protected/*"      (F.protectedRoutesHandler jwtSecret)
+    useAt "/protected/*"      (F.setUserJwData)
+    get "/protected/index"    protectedHandler
 
 
 main :: forall e. AppEffs (passport :: PASSPORT | e) Server

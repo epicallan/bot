@@ -7,3 +7,4 @@
 /.psa*
 Config.purs
 notes.md
+yarn.lock

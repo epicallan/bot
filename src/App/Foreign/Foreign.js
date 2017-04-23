@@ -6,8 +6,6 @@ var Strategy = require('passport-google-oauth20').Strategy;
 
 exports.jsonBodyParser = require('body-parser').json();
 
-exports.cookieParser = require('cookie-parser')();
-
 exports.morgan = require('morgan')('dev');
 
 exports.googleAuthStrategy = function(options) {
@@ -75,9 +73,27 @@ exports._googleAuth = function(req) {
 exports.createJwtToken = function(secret) {
   return function(user) {
     return require('jsonwebtoken').sign(
-      R.omit(['name', 'email'], user),
+      R.omit(['name', 'email', 'photo', 'gender'], user),
       secret,
       { expiresIn: 60 * 60 * 5 }
     );
   };
 };
+
+exports._protectedRoutesHandler = function(secret, req, res, next) {
+  return function () {
+    return require('express-jwt')({secret: secret})(req, res, next);
+  }
+};
+
+exports._setUserJwData = function (req, res, next) {
+  return function() {
+    if (!req.user) return res.redirect('/login'); // redirect to login page
+    req.userData = req.userData || {};
+    R.keys(req.user).forEach(function(key) {
+      req.userData[key] = req.user[key];
+    });
+    console.log('user', req.userData);
+    return next();
+  }
+}

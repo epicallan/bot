@@ -1,19 +1,22 @@
 module App.Handler.User where
 import App.Config.Config (jwtSecret)
+import App.Foreign (createJwtToken)
 import App.Model.User (User, createUser)
-import App.Foreign(createJwtToken)
 import App.Types (JWToken, AuthEffs, DbRef)
 import Control.Monad.Eff.Class (liftEff)
 import Control.Monad.Eff.Console (log)
 import Control.Monad.Eff.Exception (message)
 import Control.Monad.Eff.Ref (readRef)
+import Control.Monad.Except (runExcept)
 import Data.Argonaut (Json)
 import Data.Argonaut.Decode (decodeJson)
 import Data.Either (Either(..))
-import Data.Foreign (Foreign, unsafeFromForeign)
+import Data.Foreign (F, Foreign, readString, unsafeFromForeign)
+import Data.Maybe (Maybe(..))
 import Node.Express.Handler (Handler)
+import Node.Express.Request (getUserData)
 import Node.Express.Response (send)
-import Prelude (($), pure, bind, (<>))
+import Prelude (bind, pure, ($), (<>))
 
 
 unsafelyToJson :: Foreign -> Json
@@ -22,8 +25,8 @@ unsafelyToJson = unsafeFromForeign
 parseUserRes :: Foreign -> Either String User
 parseUserRes userRes = decodeJson $ unsafelyToJson userRes
 
-
--- this could be turned into a maybe but will require interface with the returned values in the js file
+-- this could be turned into a maybe but I think it will end up requiring interfacing
+-- with the returned Maybe value in the js foreign file
 jwtoken = { token : "null"} :: JWToken
 
 authHandler :: forall e. DbRef -> Foreign -> AuthEffs e JWToken
@@ -46,7 +49,16 @@ authHandler dbRef userPayload = do
 loginHandler :: forall e. Handler e
 loginHandler = send "Please go and login" -- TODO redirect to login page on front end app
 
-
-
 indexHandler :: forall e. Handler e
 indexHandler = send "You have been signed up" -- TODO redirect to login page on front end app
+
+protectedHandler :: forall e. Handler e
+protectedHandler = do
+  maybeId <- getUserData "id"
+  case maybeId of
+    Nothing -> send "No user Id redirect to login page"
+    Just foreignId ->
+      let eitherId = runExcept(readString foreignId :: F String)
+      in case eitherId of
+          Left _ -> send "Error reading authentication ID"
+          Right id -> send $ "authenticated with" <> id
