@@ -27,7 +27,7 @@ parseUserRes userRes = decodeJson $ unsafelyToJson userRes
 
 -- this could be turned into a maybe but I think it will end up requiring interfacing
 -- with the returned Maybe value in the js foreign file
-jwtoken = { token : "null"} :: JWToken
+jwtoken = { token : ""} :: JWToken
 
 authHandler :: forall e. DbRef -> Foreign -> AuthEffs e JWToken
 authHandler dbRef userPayload = do
