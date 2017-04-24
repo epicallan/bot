@@ -36,7 +36,8 @@
     "ngrok": "^2.2.6",
     "passport": "^0.3.2",
     "passport-google-oauth20": "^1.0.0",
-    "ramda": "^0.23.0"
+    "ramda": "^0.23.0",
+    "xhr2": "^0.1.4"
   },
   "homepage": "https://github.com/epicallan/bot#readme",
   "devDependencies": {
