@@ -1,7 +1,7 @@
 module Bot.Webhook where
 
 import App.Model.User (UserId)
-import Bot.Config (FbMessengerConf)
+import Bot.Config (FbMessengerConf, fbConf)
 import Bot.Foreign (createNgrokProxy', Ngrok)
 import Bot.Types (AccessTokenJson(..), FbBase, FbWebHookRequest(..), Url)
 import Control.Monad (void)
@@ -18,7 +18,7 @@ import Data.Foreign (F)
 import Data.Foreign.Class (readJSON)
 import Database.Mongo.Mongo (DB)
 import Network.HTTP.Affjax (AJAX, get, post)
-import Prelude (Unit, ($), (<>), bind)
+import Prelude (Unit, ($), (<>), bind, unit, pure)
 
 fbBase = "https://graph.facebook.com/v2.7/oauth/access_token" :: FbBase
 
@@ -43,25 +43,28 @@ fbWebHookRequestJson callbackurl conf  =
                                               , fields }
   in encodeJson $ fbWebHookRequest
 
-setUpNewFbWebHook :: forall e. Url -> FbMessengerConf -> Eff (ajax :: AJAX, err:: EXCEPTION, console :: CONSOLE | e) Unit
-setUpNewFbWebHook url conf =  void $ launchAff do
+setUpNewFbWebHook :: forall e. String
+                  -> FbMessengerConf
+                  -> Eff (ajax :: AJAX, err:: EXCEPTION, console :: CONSOLE | e) Unit
+setUpNewFbWebHook url conf = void $ launchAff do
   eitherRes <- attempt $ get $ fbOauthUrl conf
   case eitherRes of
     Left err  -> liftEff $ log $ message err -- TODO better error handling or logging
-    Right fbres ->  do
-      let eitherJson = runExcept $ readJSON fbres.response :: F AccessTokenJson
-      case eitherJson of
-        Left _ -> liftEff $ log "error reading Json"
-        Right tokenJson -> do
-          fbGenEither <- attempt $ post "/kda" "allena"
-          case fbGenEither of
-            Left err -> liftEff $ log $ message err
-            Right res -> liftEff $ log res.response
-          -- let fbGenEither r = runExcept $ readJSON r.response :: F FbGenericResponse
-          -- let decodedResEither = either (Left) fbGenEither fbGenericRes
-          -- case decodedResEither of
-          --   Left _ -> liftEff $ log "decoding error"
-          --   Right _ -> liftEff $ log "set up weebhook"
+    Right fbRes ->  liftEff $ log fbRes.response
+      -- let eitherJson = runExcept $ readJSON fbres.response :: F AccessTokenJson
+      -- case eitherJson of
+      --   Left _  -> liftEff $ log "error reading Json"
+      --   Right _ -> liftEff $ log "error reading Json"
+        -- Right tokenJson -> do
+        --   fbGenEither <- attempt $ post "/kda" "allena"
+        --   case fbGenEither of
+        --     Left err -> liftEff $ log $ message err
+        --     Right res -> liftEff $ log res.response
+        --   let fbGenEither r = runExcept $ readJSON r.response :: F FbGenericResponse
+        --   let decodedResEither = either (Left) fbGenEither fbGenericRes
+        --   case decodedResEither of
+        --     Left _ -> liftEff $ log "decoding error"
+        --     Right _ -> liftEff $ log "set up weebhook"
 
 createFbWebHook :: forall e. UserId
                 -> FbMessengerConf
