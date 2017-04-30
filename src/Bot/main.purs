@@ -1,7 +1,7 @@
 module Bot.Main where
 
 import Bot.MessageEvent (MessageEvent)
-import Bot.Types (MessageResponse, SenderId)
+import Bot.Types (MessageResponse, SenderId, SendAction, MessageEventAction)
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Class (liftEff)
 import Control.Monad.Eff.Console (CONSOLE, error, log)
@@ -15,11 +15,6 @@ import Node.Express.Handler (Handler)
 import Node.Express.Request (getBody)
 import Node.Express.Response (send)
 import Prelude (Unit, bind, id, map, ($), (>>>), const)
-
-type SendAction e = SenderId -> MessageResponse -> Eff (ajax :: AJAX, console :: CONSOLE | e) Unit
-
-type MessageEventAction e = MessageEvent -> Handler (ajax :: AJAX, console :: CONSOLE  | e)
-
 
 webhookMessagesHandler :: forall e. MessageEventAction e -> Handler (ajax :: AJAX, console :: CONSOLE  | e)
 webhookMessagesHandler action = do

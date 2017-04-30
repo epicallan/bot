@@ -1,5 +1,8 @@
 module Bot.Types where
 
+import Bot.MessageEvent (MessageEvent)
+import Control.Monad.Eff (Eff)
+import Control.Monad.Eff.Console (CONSOLE)
 import Data.Argonaut (jsonEmptyObject, (:=), (~>))
 import Data.Argonaut.Encode.Class (class EncodeJson)
 import Data.Foreign.Class (class IsForeign)
@@ -9,7 +12,9 @@ import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
 import Data.Maybe (Maybe)
 import Network.HTTP.Affjax (URL)
-import Prelude (class Show)
+import Network.HTTP.Affjax (AJAX)
+import Node.Express.Handler (Handler)
+import Prelude (class Show, Unit)
 
 type FbBase = URL
 
@@ -18,6 +23,11 @@ data MessageResponse = Text String | Image String | Typing
 type SenderId = String
 
 type AccessToken = String
+
+type SendAction e = SenderId -> MessageResponse -> Eff (ajax :: AJAX, console :: CONSOLE | e) Unit
+
+type MessageEventAction e = MessageEvent -> Handler (ajax :: AJAX, console :: CONSOLE  | e)
+
 
 newtype FbGenericResponse = FbGenericResponse { success :: Boolean }
 

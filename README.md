@@ -1,1 +1,1 @@
-# A bot CMS engine Experiment with purescript-express
+# A Facebook messenger bot CMS engine Experiment with purescript-express
