@@ -1,56 +1,37 @@
 module Bot.Main where
 
-import Bot.Types (MessageEvent, SenderId)
--- import Control.Monad (void)
--- import Control.Monad.Aff (attempt, launchAff)
-import Control.Monad.Aff.Console (CONSOLE)
+import Bot.MessageEvent (MessageEvent)
+import Bot.Types (MessageResponse, SenderId)
 import Control.Monad.Eff (Eff)
--- import Control.Monad.Eff.Class (liftEff)
--- import Control.Monad.Eff.Exception (message)
--- import Control.Monad.Except (runExcept)
--- import Data.Argonaut (Json)
--- import Data.Argonaut.Encode (encodeJson)
--- import Data.Either (either)
--- import Data.Foreign (Foreign, renderForeignError, unsafeFromForeign)
--- import Data.List (List(..), (:))
--- import Data.List.NonEmpty (toList)
-import Data.StrMap (StrMap)
-import Database.Mongo.Mongo (DB)
--- import Node.Express.Handler (Handler)
--- import Node.Express.Request (getBody)
-import Prelude (Unit)
+import Control.Monad.Eff.Class (liftEff)
+import Control.Monad.Eff.Console (CONSOLE, error, log)
+import Control.Monad.Except (runExcept)
+import Data.Either (Either(..))
+import Data.Foreign (F, renderForeignError)
+import Data.Foreign.Class (readJSON)
+-- import Data.List.Types (toList)
+import Network.HTTP.Affjax (AJAX)
+import Node.Express.Handler (Handler)
+import Node.Express.Request (getBody)
+import Node.Express.Response (send)
+import Prelude (Unit, bind, id, map, ($), (>>>), const)
 
-type SendAction e = SenderId -> String -> Eff (db :: DB, console :: CONSOLE | e) Unit
+type SendAction e = SenderId -> MessageResponse -> Eff (ajax :: AJAX, console :: CONSOLE | e) Unit
 
-type SendActionMap e = StrMap (SendAction e)
+type MessageEventAction e = MessageEvent -> Handler (ajax :: AJAX, console :: CONSOLE  | e)
 
-type MessagingEventAction e = MessageEvent -> Eff (db :: DB, console :: CONSOLE | e) Unit
 
-type MessagingEventActionMap e = StrMap (MessagingEventAction e)
-
--- receivedMessageAction :: MessagingEventAction e
--- receivedMessageAction = pure
---
--- receivedMessagReadAction :: forall e. MessagingEventAction e
--- receivedMessagReadAction = pure
---
--- receivedPostbackAction :: forall e. MessagingEventAction e
--- receivedPostbackAction =  pure
---
--- messagingEventActions :: forall e. MessagingEventActionMap e
--- messagingEventActions = fromFoldable $ Nil
---   : ("message" receivedMessageAction)
---   : ("postback" receivedPostbackAction)
---   : ("read" receivedMessagReadAction)
-
--- processMessageBody :: forall e. MessageBody -> Eff (db :: DB, console :: CONSOLE | e) Unit
--- processMessageBody body = pure
---
--- webhookMessagesHandler :: forall e. Handler (db :: DB, console :: CONSOLE | e) Unit
--- webhookMessagesHandler = do
---   eitherBody <- liftEff $ getBody
---   case eitherBody of
---     Left multipleErrors -> fmap $ lifttEff >>> log >>> renderForeignError $ toList body
---     Right body -> do
---       eitherBody <- runExcept $ (decode body :: MessageBody)
---       either (const $ (liftEff $ log $ message err)) processMessageBody eitherBody
+webhookMessagesHandler :: forall e. MessageEventAction e -> Handler (ajax :: AJAX, console :: CONSOLE  | e)
+webhookMessagesHandler action = do
+  eitherBodyRaw <- getBody
+  case eitherBodyRaw of
+    Left _ -> do
+      liftEff $ error "multipleErrors"
+      send("failed")
+    Right body -> do
+      let eitherMessageEvent = runExcept $ readJSON body :: F MessageEvent
+      case eitherMessageEvent of
+        Left _ -> do
+          liftEff $ error "failed to purse json"
+          send("failed")
+        Right messageEvent -> action messageEvent

@@ -1,7 +1,7 @@
 
-exports._createNgrokProxy = function(errorCb, successCb, port) {
+exports._createNgrokProxy = function(successCb, port) {
   require('ngrok').connect(port || 8080, function(err, url) {
-    if (err) errorCb(err)();
+    if (err) throw err;
     successCb(url)();
   });
 }

@@ -1,55 +1,47 @@
 module Bot.Types where
 
-import Control.Monad.Eff (Eff)
 import Data.Argonaut (jsonEmptyObject, (:=), (~>))
 import Data.Argonaut.Encode.Class (class EncodeJson)
 import Data.Foreign.Class (class IsForeign)
 import Data.Foreign.Generic (defaultOptions, readGeneric)
+import Data.Foreign.NullOrUndefined (NullOrUndefined)
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
 import Data.Maybe (Maybe)
-import Prelude (class Show, Unit)
-type FbWebHook = String
+import Network.HTTP.Affjax (URL)
+import Prelude (class Show)
 
-type FbBase = String
+type FbBase = URL
 
-type FbPath = FbBase -> String -> String
+data MessageResponse = Text String | Image String | Typing
 
-newtype MessageEvent = MessageEvent { type :: Maybe String }
+type SenderId = String
 
-newtype FbWebHookRequest = FbWebHookRequest
+type AccessToken = String
+
+newtype FbGenericResponse = FbGenericResponse { success :: Boolean }
+
+derive instance genericFbGenericResponse :: Generic FbGenericResponse _
+instance showFbGenericResponse :: Show FbGenericResponse where show = genericShow
+instance isForeignFbGenericResponse :: IsForeign FbGenericResponse where
+  read x = readGeneric (defaultOptions { unwrapSingleConstructors = true }) x
+
+newtype AccessTokenJson = AccessTokenJson { token :: String }
+
+derive instance genericAccessTokenJson :: Generic AccessTokenJson _
+instance showAccessTokenJson :: Show AccessTokenJson where show = genericShow
+instance isForeignAccessTokenJson :: IsForeign AccessTokenJson where
+  read x = readGeneric (defaultOptions { unwrapSingleConstructors = true }) x
+
+newtype FbWebhookRequest = FbWebhookRequest
   { object :: String
   , callbackUrl :: String
   , verifyToken :: String
   , fields :: Array String
   }
 
-data Message = Text String | Image String | Typing
-
-type SenderId = String
-
-type SendAction e = SenderId -> Maybe Message -> Eff e Unit
-
-type AccessToken = String
-
-type Url = String
-newtype FbGenericResponse = FbGenericResponse { success :: String }
-derive instance genericFbGenericResponse :: Generic FbGenericResponse _
-instance showFbGenericResponse :: Show FbGenericResponse where show = genericShow
-
-instance isForeignFbGenericResponse :: IsForeign FbGenericResponse where
-  read x = readGeneric (defaultOptions { unwrapSingleConstructors = true }) x
-
-newtype AccessTokenJson = AccessTokenJson { access_token :: String }
-derive instance genericAccessTokenJson :: Generic AccessTokenJson _
-instance showAccessTokenJson :: Show AccessTokenJson where show = genericShow
-
-instance isForeignAccessTokenJson :: IsForeign AccessTokenJson where
-  read x = readGeneric (defaultOptions { unwrapSingleConstructors = true }) x
-
-
-instance encodeJsonFbWebHookRequest :: EncodeJson FbWebHookRequest where
-  encodeJson (FbWebHookRequest fbwr)
+instance encodeJsonFbWebhookRequest :: EncodeJson FbWebhookRequest where
+  encodeJson (FbWebhookRequest fbwr)
     =   "object" := fbwr.object
     ~>  "callback_url" := fbwr.callbackUrl
     ~>  "verify_token" := fbwr.verifyToken
