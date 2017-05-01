@@ -52,6 +52,8 @@ newtype Read = Read
 
 newtype SenderRecipientId = SenderRecipientId { id :: String }
 
+data EventAction = EventP Postback | EventM Message |  EventR Read
+
 newtype Messaging = Messaging
   { sender :: SenderRecipientId
   , recipient :: SenderRecipientId
@@ -74,10 +76,7 @@ newtype MessageEvent = MessageEvent
 
 type MessageEffs e =  Handler (ajax :: AJAX, console :: CONSOLE  | e)
 
-type MessageEventHandler e =
-  { postback :: MessageEntry -> Postback -> MessageEffs e
-  , message :: MessageEntry -> Message -> MessageEffs e
-  }
+type MessageEventHandler e = MessageEntry -> EventAction -> MessageEffs e
 
 type MessageEventRunner e = MessageEventHandler e -> MessageEvent -> MessageEffs e
 
