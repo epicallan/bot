@@ -5,7 +5,7 @@ import Data.Foldable (traverse_)
 import Data.Foreign.NullOrUndefined (unNullOrUndefined)
 import Data.Maybe (Maybe(..))
 import Node.Express.Response (setStatus)
-import Prelude (void, ($))
+-- import Prelude (($))
 
 processMessaging :: forall e. MessageEntry -> Messaging -> MessageEventHandler e -> MessageEffs e
 processMessaging mE (Messaging ms) handler = do
@@ -24,5 +24,6 @@ processMessaging mE (Messaging ms) handler = do
 
 messageActionRunner :: forall e. MessageEventHandler e -> MessageEvent -> MessageEffs e
 messageActionRunner handler (MessageEvent messageEvent@{ object, entry}) =
-  traverse_ (\(MessageEntry messageEntry@{ messaging }) -> traverseMessaging (MessageEntry messageEntry) messaging) entry
-    where traverseMessaging mE = traverse_ (\m -> void $ processMessaging mE m handler)
+  traverse_ (\(MessageEntry messageEntry@{ messaging })
+    -> traverseMessaging (MessageEntry messageEntry) messaging) entry
+    where traverseMessaging mE = traverse_ (\m -> processMessaging mE m handler)
