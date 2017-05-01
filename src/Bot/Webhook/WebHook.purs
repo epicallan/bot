@@ -17,9 +17,9 @@ import Data.Argonaut.Encode (encodeJson)
 import Data.Either (Either(..))
 import Data.Foreign (F)
 import Data.Foreign.Class (readJSON)
--- import Database.Mongo.Mongo (DB)
 import Network.HTTP.Affjax (AJAX, URL, get, post)
 import Prelude (Unit, ($), (<>), bind)
+import Utils (multpleErrorsToStr)
 
 fbBase = "https://graph.facebook.com/v2.7/oauth/access_token" :: FbBase
 
@@ -53,7 +53,7 @@ initfbWebhook conf url = do
     Right fbAuthRes -> do
       let eitherJson = runExcept $ readJSON fbAuthRes.response :: F AccessTokenJson
       case eitherJson of
-        Left _  -> error "error reading auth Json"
+        Left errors  -> error $ "error reading auth Json" <> multpleErrorsToStr errors
         Right tokenJson -> do
           fbGenEither <- attempt $ post (fbPostsubcriptionUrl conf tokenJson) $ fbWebhookRequestJson url conf
           case fbGenEither of

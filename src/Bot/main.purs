@@ -1,32 +1,27 @@
 module Bot.Main where
-
-import Bot.MessageEvent (MessageEvent)
-import Bot.Types (MessageResponse, SenderId, SendAction, MessageEventAction)
-import Control.Monad.Eff (Eff)
+import Bot.Model.MessageEvent (MessageEvent, MessageEventHandler, MessageEventRunner, MessageEffs)
 import Control.Monad.Eff.Class (liftEff)
-import Control.Monad.Eff.Console (CONSOLE, error, log)
+import Control.Monad.Eff.Console (error)
 import Control.Monad.Except (runExcept)
 import Data.Either (Either(..))
-import Data.Foreign (F, renderForeignError)
+import Data.Foreign (F)
 import Data.Foreign.Class (readJSON)
--- import Data.List.Types (toList)
-import Network.HTTP.Affjax (AJAX)
-import Node.Express.Handler (Handler)
 import Node.Express.Request (getBody)
-import Node.Express.Response (send)
-import Prelude (Unit, bind, id, map, ($), (>>>), const)
+import Node.Express.Response (setStatus)
+import Prelude (bind, (<>), ($))
+import Utils (multpleErrorsToStr)
 
-webhookMessagesHandler :: forall e. MessageEventAction e -> Handler (ajax :: AJAX, console :: CONSOLE  | e)
-webhookMessagesHandler action = do
+webhookMessagesHandler :: forall e. MessageEventRunner e -> MessageEventHandler e -> MessageEffs e
+webhookMessagesHandler runEvent handler = do
   eitherBodyRaw <- getBody
   case eitherBodyRaw of
-    Left _ -> do
-      liftEff $ error "multipleErrors"
-      send("failed")
+    Left multipleBodyErrors -> do
+      liftEff $ error $ multpleErrorsToStr multipleBodyErrors
+      setStatus(200)
     Right body -> do
       let eitherMessageEvent = runExcept $ readJSON body :: F MessageEvent
       case eitherMessageEvent of
-        Left _ -> do
-          liftEff $ error "failed to purse json"
-          send("failed")
-        Right messageEvent -> action messageEvent
+        Left multipleJsonErrors -> do
+          liftEff $ error $ "failed to purse json: " <> (multpleErrorsToStr multipleJsonErrors)
+          setStatus(200)
+        Right messageEvent -> runEvent handler messageEvent

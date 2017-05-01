@@ -1,10 +1,13 @@
-module Bot.MessageEvent where
+module Bot.Model.MessageEvent where
 
+import Control.Monad.Eff.Console (CONSOLE)
 import Data.Foreign.Class (class IsForeign)
 import Data.Foreign.Generic (defaultOptions, readGeneric)
 import Data.Foreign.NullOrUndefined (NullOrUndefined)
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
+import Network.HTTP.Affjax (AJAX)
+import Node.Express.Handler (Handler)
 import Prelude (class Show)
 
 newtype Referral = Referral
@@ -66,8 +69,17 @@ newtype MessageEntry = MessageEntry
 
 newtype MessageEvent = MessageEvent
   { object :: String
-  , entry :: Array  MessageEntry
+  , entry :: Array MessageEntry
   }
+
+type MessageEffs e =  Handler (ajax :: AJAX, console :: CONSOLE  | e)
+
+type MessageEventHandler e =
+  { postback :: MessageEntry -> Postback -> MessageEffs e
+  , message :: MessageEntry -> Message -> MessageEffs e
+  }
+
+type MessageEventRunner e = MessageEventHandler e -> MessageEvent -> MessageEffs e
 
 derive instance genericQuickReply :: Generic QuickReply _
 instance showQuickReply :: Show QuickReply where show = genericShow

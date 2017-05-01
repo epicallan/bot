@@ -1,6 +1,5 @@
 module Bot.Types where
 
-import Bot.MessageEvent (MessageEvent)
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Console (CONSOLE)
 import Data.Argonaut (jsonEmptyObject, (:=), (~>))
@@ -23,10 +22,6 @@ data MessageResponse = Text String | Image String | Typing
 type SenderId = String
 
 type AccessToken = String
-
-type SendAction e = SenderId -> MessageResponse -> Eff (ajax :: AJAX, console :: CONSOLE | e) Unit
-
-type MessageEventAction e = MessageEvent -> Handler (ajax :: AJAX, console :: CONSOLE  | e)
 
 
 newtype FbGenericResponse = FbGenericResponse { success :: Boolean }

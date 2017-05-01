@@ -1,1 +1,1 @@
-contains config file which is currently gitignored 
+contains google auth config details currently gitignored 
