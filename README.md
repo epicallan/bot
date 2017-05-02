@@ -1,1 +1,5 @@
-# A Facebook messenger bot CMS engine Experiment with purescript-express
+## A Facebook messenger bot CMS engine Experiment in purescript
+[![Code Climate](https://codeclimate.com/github/epicallan/bot.svg)]
+[![](https://tokei.rs/github/epicallan)](https://github/epicallan/bot).
+[![Dependency Status](https://david-dm.org/epicallan/bot.svg)](https://david-dm.org/epicallan/bot)
+![devDependency Status](https://david-dm.org/epicallan/bot/dev-status.svg)](https://david-dm.org/epicallan/bot?type=dev)
