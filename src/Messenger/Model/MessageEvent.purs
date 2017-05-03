@@ -1,11 +1,15 @@
 module Messenger.Model.MessageEvent where
 
+import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Console (CONSOLE)
 import Data.Foreign.Class (class IsForeign)
 import Data.Foreign.Generic (defaultOptions, readGeneric)
 import Data.Foreign.NullOrUndefined (NullOrUndefined)
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
+import Data.Maybe (Maybe)
+import Data.Tuple (Tuple)
+import Messenger.Types (SenderId)
 import Network.HTTP.Affjax (AJAX)
 import Node.Express.Handler (Handler)
 import Prelude (class Show)
@@ -52,8 +56,6 @@ newtype Read = Read
 
 newtype SenderRecipientId = SenderRecipientId { id :: String }
 
-data EventAction = EventP Postback | EventM Message |  EventR Read
-
 newtype Messaging = Messaging
   { sender :: SenderRecipientId
   , recipient :: SenderRecipientId
@@ -74,9 +76,17 @@ newtype MessageEvent = MessageEvent
   , entry :: Array MessageEntry
   }
 
-type MessageEffs e =  Handler (ajax :: AJAX, console :: CONSOLE  | e)
+data EventAction = EventP Postback | EventM Message |  EventR Read
 
-type MessageEventHandler e = MessageEntry -> EventAction -> MessageEffs e
+type SendPayload = Tuple SenderId String
+
+data Response = Text SendPayload | Image SendPayload | Audio SendPayload | Video SendPayload
+
+type WebHookEffs e =  Handler (ajax :: AJAX, console :: CONSOLE  | e)
+
+type MessageEffs e a = Eff (ajax :: AJAX, console :: CONSOLE  | e) a
+
+type MessageEventHandler e = MessageEntry -> EventAction -> MessageEffs e (Maybe Response)
 
 derive instance genericQuickReply :: Generic QuickReply _
 instance showQuickReply :: Show QuickReply where show = genericShow

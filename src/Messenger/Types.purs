@@ -11,8 +11,6 @@ import Prelude (class Show)
 
 type FbBase = URL
 
-data MessageResponse = Text String | Image String | Typing
-
 type SenderId = String
 
 type UserId = String

@@ -1,23 +1,35 @@
 module Messenger.Bot where
+import Control.Bind ((>>=))
 import Control.Monad.Eff.Class (liftEff)
 import Control.Monad.Eff.Console (error, info)
 import Control.Monad.Except (runExcept)
 import Data.Either (Either(..))
+import Data.Foldable (traverse_)
 import Data.Foreign (F)
 import Data.Foreign.Class (readJSON)
-import Node.Express.Request (getBody)
-import Node.Express.Response (setStatus)
-import Messenger.Model.MessageEvent (
-  MessageEventHandler, MessageEffs, EventAction(..),
-  MessageEntry(..), MessageEvent(..), Messaging(..))
-import Data.Foldable (traverse_)
 import Data.Foreign.NullOrUndefined (unNullOrUndefined)
 import Data.Maybe (Maybe(..))
-import Prelude (($), bind, (<>))
+import Data.Tuple (Tuple(..))
+import Messenger.Model.MessageEvent (EventAction(..), MessageEffs, MessageEntry(..), WebHookEffs, MessageEvent(..), MessageEventHandler, Messaging(..), Postback(..), Response(..))
+import Node.Express.Request (getBody)
+import Node.Express.Response (setStatus)
+import Prelude (($), bind, (<>), pure)
 import Utils (multpleErrorsToStr)
 
-runHandler :: forall e. MessageEntry -> Messaging -> MessageEventHandler e -> MessageEffs e
-runHandler mE (Messaging ms) handler = do
+
+sendResponse :: forall e. (Maybe Response) -> WebHookEffs e
+sendResponse response = case response of
+  Nothing -> setStatus 200
+  Just (Text (Tuple id msg))  -> setStatus 200
+  Just (Image (Tuple id msg)) -> setStatus 200
+  Just (Audio (Tuple id msg)) -> setStatus 200
+  Just (Video (Tuple id msg)) -> setStatus 200
+
+runMsgHandler :: forall e. MessageEntry
+              -> Messaging
+              -> (MessageEntry -> EventAction -> MessageEffs e (Maybe Response))
+              -> MessageEffs e (Maybe Response)
+runMsgHandler mE (Messaging ms) handler = do
   case unNullOrUndefined ms.postback of
     Just postback -> handler mE (EventP postback)
     Nothing -> do
@@ -28,15 +40,15 @@ runHandler mE (Messaging ms) handler = do
             Just read -> handler mE (EventR read)
             Nothing -> do
               liftEff $ info "unknown Event"
-              setStatus 200
+              pure $ Nothing
 
-messageEventRunner :: forall e. MessageEventHandler e -> MessageEvent -> MessageEffs e
+messageEventRunner :: forall e. MessageEventHandler e -> MessageEvent -> WebHookEffs e
 messageEventRunner handler (MessageEvent messageEvent@{ object, entry}) =
   traverse_ (\(MessageEntry messageEntry@{ messaging })
     -> traverseMessaging (MessageEntry messageEntry) messaging) entry
-    where traverseMessaging mE = traverse_ (\m -> runHandler mE m handler)
+    where traverseMessaging mE = traverse_ (\m -> (liftEff $ runMsgHandler mE m handler) >>= (\x -> sendResponse x))
 
-webhookMessagesHandler :: forall e. MessageEventHandler e -> MessageEffs e
+webhookMessagesHandler :: forall e. MessageEventHandler e -> WebHookEffs e
 webhookMessagesHandler handler = do
   eitherBodyRaw <- getBody
   case eitherBodyRaw of
