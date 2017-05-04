@@ -7,8 +7,8 @@ import Control.Monad.Except (runExcept)
 import Data.Array (head)
 import Data.Either (Either(..))
 import Data.Foldable (traverse_)
-import Data.Foreign (F)
-import Data.Foreign.Class (readJSON)
+import Data.Foreign (F, MultipleErrors)
+import Data.Foreign.Class (class IsForeign, readJSON)
 import Data.Foreign.NullOrUndefined (unNullOrUndefined)
 import Data.Maybe (Maybe(..), maybe)
 import Data.Tuple (Tuple(..))
@@ -19,13 +19,12 @@ import Prelude (Unit, bind, const, join, map, pure, void, ($), (<>))
 import Utils (multpleErrorsToStr)
 
 
-sendResponse :: forall e. (Maybe Response) -> WebHookEffs e
+sendResponse :: forall e. Response -> MessageEffs e Unit
 sendResponse response = case response of
-  Nothing -> setStatus 200
-  Just (Text (Tuple id msg))  -> setStatus 200
-  Just (Image (Tuple id msg)) -> setStatus 200
-  Just (Audio (Tuple id msg)) -> setStatus 200
-  Just (Video (Tuple id msg)) -> setStatus 200
+  Text (Tuple id msg)  -> log "hey"
+  Image (Tuple id msg) -> log "hey"
+  Audio (Tuple id msg) -> log "hey"
+  Video (Tuple id msg) -> log "hey"
 
 
 
@@ -42,54 +41,17 @@ getEventAction (Messaging ms) =
             Nothing -> Nothing
 
 
-runTest :: forall e. EventAction -> MessageEffs e (Maybe Response)
-runTest msg = do
-  liftEff $ log "hey  there"
-  pure $ Just (Text (Tuple "" ""))
-
-runResponse :: forall e. (EventAction -> MessageEffs e (Maybe Response))
-                -> EventAction
-                -> WebHookEffs e
-runResponse h e = do
-  mR <- liftEff $ runTest e
-  sendResponse mR
-
-messageEventRunner :: forall e. (EventAction -> MessageEffs e (Maybe Response)) -> MessageEvent -> WebHookEffs e
+messageEventRunner :: forall e. (EventAction -> MessageEffs e (Maybe Response)) -> MessageEvent -> MessageEffs e Unit
 messageEventRunner handler (MessageEvent messageEvent@{ object, entry}) = do
   let eventActions = join $ map (\(MessageEntry messageEntry@{ messaging }) -> map getEventAction messaging) entry
   case (head eventActions) of
-    Nothing -> setStatus 200
+    Nothing -> liftEff $ log "No event"
     Just maybeAction -> do
       case maybeAction of
-        Nothing -> setStatus 200
-        Just action -> do
-          liftEff $ log "hell"
-          runResponse handler action
-      -- liftEff $ maybe (const $ setStatus 200) (c) $ maybeAction
-      -- setStatus 200
-  --
-  -- eventAction <- head eventActions
-  -- case eventAction of
-  --   Nothing -> setStatus 200
-  --   Just _ -> setStatus 200
-      --
-      -- setStatus 200
-
-
-      -- where traverseMesssaging msg = runMsgHandler handler msg
-
-
-webhookMessagesHandler :: forall e. (EventAction -> MessageEffs e (Maybe Response)) -> WebHookEffs e
-webhookMessagesHandler handler = do
-  eitherBodyRaw <- getBody
-  case eitherBodyRaw of
-    Left multipleBodyErrors -> do
-      liftEff $ error $ multpleErrorsToStr multipleBodyErrors
-      setStatus(200)
-    Right body -> do
-      let eitherMessageEvent = runExcept $ readJSON body :: F MessageEvent
-      case eitherMessageEvent of
-        Left multipleJsonErrors -> do
-          liftEff $ error $ "failed to purse json: " <> (multpleErrorsToStr multipleJsonErrors)
-          setStatus(200)
-        Right messageEvent -> messageEventRunner handler messageEvent
+        Nothing -> liftEff $ log "No event"
+        Just event -> do
+          liftEff $ log "handle event action"
+          maybeRes <- handler event
+          case maybeRes of
+            Nothing ->  liftEff $ log "no Response"
+            Just res -> sendResponse res
