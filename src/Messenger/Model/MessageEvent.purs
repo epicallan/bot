@@ -86,7 +86,7 @@ type WebHookEffs e =  Handler (ajax :: AJAX, console :: CONSOLE  | e)
 
 type MessageEffs e a = Eff (ajax :: AJAX, console :: CONSOLE  | e) a
 
-type MessageEventHandler e = MessageEntry -> EventAction -> MessageEffs e (Maybe Response)
+-- type MessageEventHandler e = EventAction -> MessageEffs e (Maybe Response)
 
 derive instance genericQuickReply :: Generic QuickReply _
 instance showQuickReply :: Show QuickReply where show = genericShow

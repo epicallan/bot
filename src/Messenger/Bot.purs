@@ -1,19 +1,21 @@
 module Messenger.Bot where
 import Control.Bind ((>>=))
+import Control.Monad.Eff (foreachE)
 import Control.Monad.Eff.Class (liftEff)
-import Control.Monad.Eff.Console (error, info)
+import Control.Monad.Eff.Console (error, info, log)
 import Control.Monad.Except (runExcept)
+import Data.Array (head)
 import Data.Either (Either(..))
 import Data.Foldable (traverse_)
 import Data.Foreign (F)
 import Data.Foreign.Class (readJSON)
 import Data.Foreign.NullOrUndefined (unNullOrUndefined)
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe(..), maybe)
 import Data.Tuple (Tuple(..))
-import Messenger.Model.MessageEvent (EventAction(..), MessageEffs, MessageEntry(..), WebHookEffs, MessageEvent(..), MessageEventHandler, Messaging(..), Postback(..), Response(..))
+import Messenger.Model.MessageEvent (EventAction(..), MessageEffs, MessageEntry(..), MessageEvent(..), Messaging(..), Postback(..), Response(..), WebHookEffs)
 import Node.Express.Request (getBody)
 import Node.Express.Response (setStatus)
-import Prelude (($), bind, (<>), pure)
+import Prelude (Unit, bind, const, join, map, pure, void, ($), (<>))
 import Utils (multpleErrorsToStr)
 
 
@@ -25,30 +27,59 @@ sendResponse response = case response of
   Just (Audio (Tuple id msg)) -> setStatus 200
   Just (Video (Tuple id msg)) -> setStatus 200
 
-runMsgHandler :: forall e. MessageEntry
-              -> Messaging
-              -> (MessageEntry -> EventAction -> MessageEffs e (Maybe Response))
-              -> MessageEffs e (Maybe Response)
-runMsgHandler mE (Messaging ms) handler = do
+
+
+getEventAction :: Messaging -> Maybe EventAction
+getEventAction (Messaging ms) =
   case unNullOrUndefined ms.postback of
-    Just postback -> handler mE (EventP postback)
+    Just postback -> Just (EventP postback)
     Nothing -> do
       case unNullOrUndefined ms.message of
-        Just message -> handler mE (EventM message)
+        Just message -> Just (EventM message)
         Nothing -> do
           case unNullOrUndefined ms.read of
-            Just read -> handler mE (EventR read)
-            Nothing -> do
-              liftEff $ info "unknown Event"
-              pure $ Nothing
+            Just read -> Just (EventR read)
+            Nothing -> Nothing
 
-messageEventRunner :: forall e. MessageEventHandler e -> MessageEvent -> WebHookEffs e
-messageEventRunner handler (MessageEvent messageEvent@{ object, entry}) =
-  traverse_ (\(MessageEntry messageEntry@{ messaging })
-    -> traverseMessaging (MessageEntry messageEntry) messaging) entry
-    where traverseMessaging mE = traverse_ (\m -> (liftEff $ runMsgHandler mE m handler) >>= (\x -> sendResponse x))
 
-webhookMessagesHandler :: forall e. MessageEventHandler e -> WebHookEffs e
+runTest :: forall e. EventAction -> MessageEffs e (Maybe Response)
+runTest msg = do
+  liftEff $ log "hey  there"
+  pure $ Just (Text (Tuple "" ""))
+
+runResponse :: forall e. (EventAction -> MessageEffs e (Maybe Response))
+                -> EventAction
+                -> WebHookEffs e
+runResponse h e = do
+  mR <- liftEff $ runTest e
+  sendResponse mR
+
+messageEventRunner :: forall e. (EventAction -> MessageEffs e (Maybe Response)) -> MessageEvent -> WebHookEffs e
+messageEventRunner handler (MessageEvent messageEvent@{ object, entry}) = do
+  let eventActions = join $ map (\(MessageEntry messageEntry@{ messaging }) -> map getEventAction messaging) entry
+  case (head eventActions) of
+    Nothing -> setStatus 200
+    Just maybeAction -> do
+      case maybeAction of
+        Nothing -> setStatus 200
+        Just action -> do
+          liftEff $ log "hell"
+          runResponse handler action
+      -- liftEff $ maybe (const $ setStatus 200) (c) $ maybeAction
+      -- setStatus 200
+  --
+  -- eventAction <- head eventActions
+  -- case eventAction of
+  --   Nothing -> setStatus 200
+  --   Just _ -> setStatus 200
+      --
+      -- setStatus 200
+
+
+      -- where traverseMesssaging msg = runMsgHandler handler msg
+
+
+webhookMessagesHandler :: forall e. (EventAction -> MessageEffs e (Maybe Response)) -> WebHookEffs e
 webhookMessagesHandler handler = do
   eitherBodyRaw <- getBody
   case eitherBodyRaw of
