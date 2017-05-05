@@ -1,13 +1,19 @@
 module Messenger.Types where
 
+import Control.Monad.Aff (Aff)
+import Control.Monad.Eff (Eff)
+import Control.Monad.Eff.Console (CONSOLE)
+import Control.Monad.Eff.Exception (EXCEPTION)
 import Data.Argonaut (jsonEmptyObject, (:=), (~>))
 import Data.Argonaut.Encode.Class (class EncodeJson)
 import Data.Foreign.Class (class IsForeign)
 import Data.Foreign.Generic (defaultOptions, readGeneric)
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
-import Network.HTTP.Affjax (URL)
-import Prelude (class Show)
+import Database.Mongo.Mongo (DB)
+import Messenger.Foreign (Ngrok)
+import Network.HTTP.Affjax (AJAX, URL)
+import Prelude (class Show, Unit)
 
 type FbBase = URL
 
@@ -17,6 +23,8 @@ type UserId = String
 
 type AccessToken = String
 
+type WebHookSetUpEffs e = Eff (ngrok:: Ngrok, ajax :: AJAX, db :: DB, err:: EXCEPTION, console :: CONSOLE | e) Unit
+type WebHookSetUpAff e = Aff (ngrok:: Ngrok, ajax :: AJAX, db :: DB, console :: CONSOLE | e) Unit
 
 newtype FbGenericResponse = FbGenericResponse { success :: Boolean }
 

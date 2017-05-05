@@ -1,23 +1,23 @@
 module Messenger.Webhook where
-
-import Messenger.Config (FbMessengerConf)
-import Messenger.Foreign (createNgrokProxy', Ngrok)
-import Messenger.Types (AccessTokenJson(..), FbBase, FbWebhookRequest(..), UserId)
-import Control.Monad (void)
 import Control.Monad.Aff (Aff, attempt, launchAff)
-import Control.Monad.Aff.Console (error, info)
-import Control.Monad.Eff (Eff)
+import Control.Monad.Aff.Console (error, info, log)
 import Control.Monad.Eff.Class (liftEff)
-import Control.Monad.Eff.Console (CONSOLE, log)
-import Control.Monad.Eff.Exception (EXCEPTION, message)
+import Control.Monad.Eff.Console (CONSOLE)
+import Control.Monad.Eff.Exception (message)
 import Control.Monad.Except (runExcept)
 import Data.Argonaut (Json)
 import Data.Argonaut.Encode (encodeJson)
 import Data.Either (Either(..))
 import Data.Foreign (F)
 import Data.Foreign.Class (readJSON)
+import Data.Maybe (Maybe(..))
+import Database.Mongo.Mongo (Database)
+import Messenger.Config (FbMessengerConf, fbConf)
+import Messenger.Foreign (createNgrokProxy')
+import Messenger.Model.Webhook (saveWebhook, findWebhook)
+import Messenger.Types (AccessTokenJson(..), FbBase, FbWebhookRequest(..), UserId, WebHookSetUpEffs,  WebHookSetUpAff)
 import Network.HTTP.Affjax (AJAX, URL, get, post)
-import Prelude (Unit, ($), (<>), bind)
+import Prelude (Unit, bind, show, ($), (<>), pure, unit, void)
 import Utils (multpleErrorsToStr)
 
 fbBase = "https://graph.facebook.com/v2.7/oauth/access_token" :: FbBase
@@ -59,14 +59,25 @@ initfbWebhook conf url = do
             Left err -> error $ message err
             Right res -> info res.response
 
-setupFbWebhook :: forall e. UserId
-                -> FbMessengerConf
-                -> Eff (ngrok:: Ngrok, ajax :: AJAX, err:: EXCEPTION, console :: CONSOLE | e) Unit
-setupFbWebhook userId fbConf= void $ launchAff do
+
+
+setupFbWebhook :: forall e. Database -> UserId -> WebHookSetUpAff e
+setupFbWebhook database userId = do
   eitherUrl <- attempt $ createNgrokProxy' 8080
   case eitherUrl of
-    Left err  -> liftEff $ log $ message err
+    Left err  -> log $ message err
     Right url -> do
-      liftEff $ log url
+      log url
       initfbWebhook fbConf url
-      -- save fb webhook with userId
+      saveWebhook database userId url
+
+main :: forall e. Database -> UserId -> WebHookSetUpEffs e
+main database userId = void $ launchAff do
+  maybeWebhook <- findWebhook database userId
+  case maybeWebhook of
+    Nothing -> do
+      setupFbWebhook database userId
+      pure unit
+    Just webhook -> do
+      info "using webhook: "
+      pure unit

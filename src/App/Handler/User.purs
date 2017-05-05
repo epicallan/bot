@@ -2,7 +2,7 @@ module App.Handler.User where
 import App.Config.Config (jwtSecret)
 import App.Foreign (createJwtToken)
 import App.Model.User (User, createUser)
-import App.Types (JWToken, AuthEffs, DbRef)
+import App.Types (JWToken, AuthEffs, DbRef, WebHookHEffs)
 import Control.Monad.Eff.Class (liftEff)
 import Control.Monad.Eff.Console (log)
 import Control.Monad.Eff.Exception (message)
@@ -15,7 +15,8 @@ import Data.Foreign (F, Foreign, readString, unsafeFromForeign)
 import Data.Maybe (Maybe(..))
 import Node.Express.Handler (Handler)
 import Node.Express.Request (getUserData)
-import Node.Express.Response (send)
+import Node.Express.Response (send, setStatus)
+import Messenger.Webhook as Wb
 import Prelude (bind, pure, ($), (<>))
 
 
@@ -62,3 +63,23 @@ protectedHandler = do
       in case eitherId of
           Left _ -> send "Error reading authentication ID"
           Right id -> send $ "authenticated with" <> id
+
+
+addFbWebhook :: forall e. DbRef -> WebHookHEffs e
+addFbWebhook dbRef = do
+  eitherDb <- liftEff $ readRef dbRef
+  case eitherDb of
+    Left err -> do
+      liftEff $ log $ "Error connecting to the database " <> message err
+      setStatus 400
+    Right db -> do
+      maybeId <- getUserData "id"
+      case maybeId of
+        Nothing -> send "No user Id redirect to login page"
+        Just foreignId ->
+          let eitherId = runExcept(readString foreignId :: F String)
+          in case eitherId of
+              Left _ -> send "Error reading authentication ID"
+              Right id -> do
+                liftEff $ Wb.main db id
+                send "set up webhook"

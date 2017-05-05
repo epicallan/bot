@@ -2,6 +2,7 @@ module Main where
 import App.Foreign as F
 import App.Config.Config (googleStrategy, jwtSecret)
 import App.Foreign (PASSPORT)
+import App.Handler.Messenger (messengerWebhook)
 import App.Handler.User (authHandler, indexHandler, loginHandler, protectedHandler)
 import App.Types (AppDb, DbRef, AppSetupEffs, AppEffs)
 import Control.Monad.Aff (attempt, launchAff)
@@ -29,7 +30,6 @@ addDbRef dbRef = void $ launchAff do
   liftEff $ writeRef dbRef (eitherDatabase :: AppDb)
   liftEff $ log "connected to db"
 
-
 appSetup :: forall e. DbRef -> AppSetupEffs (passport :: PASSPORT | e)
 appSetup dbRef = do
     useExternal               F.morgan
@@ -38,12 +38,13 @@ appSetup dbRef = do
     liftEff $                 F.googleAuthStrategy googleStrategy
     get "/login"              loginHandler
     get "/"                   indexHandler
+    get "/webhook"            messengerWebhook
     get "/auth/google/"       F.googleAuth
     get "/auth/google/return" (F.googleAuthReturn authHandler dbRef)
     useAt "/protected/*"      (F.protectedRoutesHandler jwtSecret)
     useAt "/protected/*"      (F.setUserJwData)
     get "/protected/index"    protectedHandler
-
+    -- get "/protected/user/webhook" addFbWebhook
 
 main :: forall e. AppEffs (passport :: PASSPORT | e) Server
 main = do

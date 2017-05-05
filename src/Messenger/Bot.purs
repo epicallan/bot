@@ -1,6 +1,9 @@
-module Messenger.Bot where
+module Messenger.Bot (
+    getMessageEvent
+  , messageEventRunner
+  ) where
 import Control.Monad.Eff.Class (liftEff)
-import Control.Monad.Eff.Console (error, info, log, warn)
+import Control.Monad.Eff.Console (info, log, warn)
 import Control.Monad.Except (runExcept)
 import Data.Either (Either(..))
 import Data.Foldable (traverse_)
@@ -38,19 +41,16 @@ getEventAction (Messaging ms) =
             Nothing -> Nothing
 
 
-messageEventRunner :: forall e. (EventAction -> MessageEffs e (Maybe Response)) -> Either String MessageEvent-> MessageEffs e Unit
-messageEventRunner handler maybeMe  = do
-  case maybeMe of
-    Left err -> liftEff $ error $ "No event"
-    Right (MessageEvent messageEvent@{ object, entry}) -> do
-      let eventActions = join $ map (\(MessageEntry messageEntry@{ messaging }) -> map getEventAction messaging) entry
-      liftEff $ traverse_ (\eventAction ->
-          case eventAction of
-            Nothing    -> liftEff $ info "No event"
-            Just event -> do
-              maybeRes <- handler event
-              maybe (liftEff $ warn "no Response") sendResponse maybeRes
-              ) eventActions
+messageEventRunner :: forall e. (EventAction -> MessageEffs e (Maybe Response)) -> MessageEvent -> MessageEffs e Unit
+messageEventRunner handler (MessageEvent messageEvent@{ object, entry})   = do
+  let eventActions = join $ map (\(MessageEntry messageEntry@{ messaging }) -> map getEventAction messaging) entry
+  liftEff $ traverse_ (\eventAction ->
+      case eventAction of
+        Nothing    -> liftEff $ info "No event"
+        Just event -> do
+          maybeRes <- handler event
+          maybe (liftEff $ warn "no Response") sendResponse maybeRes
+          ) eventActions
 
 getMessageEvent :: forall e. HandlerM (express :: EXPRESS | e) (Either String MessageEvent)
 getMessageEvent = do
