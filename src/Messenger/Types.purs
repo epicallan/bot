@@ -26,6 +26,19 @@ type AccessToken = String
 type WebHookSetUpEffs e = Eff (ngrok:: Ngrok, ajax :: AJAX, db :: DB, err:: EXCEPTION, console :: CONSOLE | e) Unit
 type WebHookSetUpAff e = Aff (ngrok:: Ngrok, ajax :: AJAX, db :: DB, console :: CONSOLE | e) Unit
 
+type SendEff e a = Eff (ajax :: AJAX, console :: CONSOLE, err :: EXCEPTION | e) a
+
+-- | post response from send API
+newtype SendResponse = SendResponse
+  { recipient_id :: String
+  , message_id :: String
+  }
+
+derive instance genericSendResponse :: Generic SendResponse _
+instance showSendResponse :: Show SendResponse where show = genericShow
+instance isForeignSendResponse :: IsForeign SendResponse where
+  read x = readGeneric (defaultOptions { unwrapSingleConstructors = true }) x
+
 newtype FbGenericResponse = FbGenericResponse { success :: Boolean }
 
 derive instance genericFbGenericResponse :: Generic FbGenericResponse _

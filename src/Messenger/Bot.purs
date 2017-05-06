@@ -2,6 +2,7 @@ module Messenger.Bot (
     getMessageEvent
   , messageEventRunner
   ) where
+import Control.Bind ((>>=))
 import Control.Monad.Eff.Class (liftEff)
 import Control.Monad.Eff.Console (info, log, warn)
 import Control.Monad.Except (runExcept)
@@ -13,10 +14,11 @@ import Data.Foreign.NullOrUndefined (unNullOrUndefined)
 import Data.Maybe (Maybe(..), maybe)
 import Data.Tuple (Tuple(..))
 import Messenger.Model.MessageEvent (EventAction(..), MessageEffs, MessageEntry(..), MessageEvent(..), Messaging(..), Response(..))
+import Messenger.Types (SendEff)
 import Node.Express.Handler (HandlerM)
 import Node.Express.Request (getBody)
 import Node.Express.Types (EXPRESS)
-import Prelude (Unit, bind, join, map, pure,  ($))
+import Prelude (Unit, bind, join, map, pure, ($))
 
 
 sendResponse :: forall e. Response -> MessageEffs e Unit
@@ -41,15 +43,14 @@ getEventAction (Messaging ms) =
             Nothing -> Nothing
 
 
-messageEventRunner :: forall e. (EventAction -> MessageEffs e (Maybe Response)) -> MessageEvent -> MessageEffs e Unit
+messageEventRunner :: forall e. (EventAction -> SendEff e (Maybe Response)) -> MessageEvent -> SendEff e Unit
 messageEventRunner handler (MessageEvent messageEvent@{ object, entry})   = do
   let eventActions = join $ map (\(MessageEntry messageEntry@{ messaging }) -> map getEventAction messaging) entry
   liftEff $ traverse_ (\eventAction ->
       case eventAction of
         Nothing    -> liftEff $ info "No event"
-        Just event -> do
-          maybeRes <- handler event
-          maybe (liftEff $ warn "no Response") sendResponse maybeRes
+        Just event ->
+          handler event >>= (maybe (liftEff $ warn "no Response") sendResponse)
           ) eventActions
 
 getMessageEvent :: forall e. HandlerM (express :: EXPRESS | e) (Either String MessageEvent)

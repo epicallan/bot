@@ -3,7 +3,7 @@ import App.Foreign as F
 import App.Config.Config (googleStrategy, jwtSecret)
 import App.Foreign (PASSPORT)
 import App.Handler.Messenger (messengerWebhook)
-import App.Handler.User (authHandler, indexHandler, loginHandler, protectedHandler, addFbWebhook)
+import App.Handler.User (authHandler, indexHandler, loginHandler, addFbWebhook)
 import App.Types (AppDb, DbRef, AppSetupEffs, AppEffs)
 import Control.Monad.Aff (attempt, launchAff)
 import Control.Monad.Eff (Eff)
@@ -38,12 +38,11 @@ appSetup dbRef = do
     liftEff $                 F.googleAuthStrategy googleStrategy
     get "/login"              loginHandler
     get "/"                   indexHandler
-    get "/webhook"            messengerWebhook
+    get "/webhook/:userId"    messengerWebhook
     get "/auth/google/"       F.googleAuth
     get "/auth/google/return" (F.googleAuthReturn authHandler dbRef)
     useAt "/protected/*"      (F.protectedRoutesHandler jwtSecret)
     useAt "/protected/*"      (F.setUserJwData)
-    get "/protected/index"    protectedHandler
     get "/protected/user/webhook" addFbWebhook dbRef
 
 main :: forall e. AppEffs (passport :: PASSPORT | e) Server

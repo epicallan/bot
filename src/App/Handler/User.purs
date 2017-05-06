@@ -53,16 +53,16 @@ loginHandler = send "Please go and login" -- TODO redirect to login page on fron
 indexHandler :: forall e. Handler e
 indexHandler = send "You have been signed up" -- TODO redirect to login page on front end app
 
-protectedHandler :: forall e. Handler e
-protectedHandler = do
-  maybeId <- getUserData "id"
-  case maybeId of
-    Nothing -> send "No user Id redirect to login page"
-    Just foreignId ->
-      let eitherId = runExcept(readString foreignId :: F String)
-      in case eitherId of
-          Left _ -> send "Error reading authentication ID"
-          Right id -> send $ "authenticated with" <> id
+-- protectedHandler :: forall e. Handler e
+-- protectedHandler = do
+--   maybeId <- getUserData "id"
+--   case maybeId of
+--     Nothing -> send "No user Id redirect to login page"
+--     Just foreignId ->
+--       let eitherId = runExcept(readString foreignId :: F String)
+--       in case eitherId of
+--           Left _ -> send "Error reading authentication ID"
+--           Right id -> send $ "authenticated with" <> id
 
 
 addFbWebhook :: forall e. DbRef -> WebHookHEffs e
