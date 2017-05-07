@@ -23,6 +23,8 @@ type AuthEffs e a = Eff (ref :: REF, console :: CONSOLE, err :: EXCEPTION, db ::
 
 type HandlerAuthEffs e = Handler (ref :: REF, console :: CONSOLE, err :: EXCEPTION, db :: DB | e)
 
-type WebHookHEffs e = Handler (ref :: REF, console :: CONSOLE, ajax :: AJAX, ngrok :: Ngrok, err :: EXCEPTION, db :: DB | e)
+type WebhookEffs e = Handler (ref :: REF, console :: CONSOLE, ajax :: AJAX, err :: EXCEPTION, db :: DB | e)
+
+type AddWebHookEffs e = Handler (ref :: REF, console :: CONSOLE, ngrok :: Ngrok, ajax :: AJAX, err :: EXCEPTION, db :: DB | e)
 
 type JWToken = { token :: String }

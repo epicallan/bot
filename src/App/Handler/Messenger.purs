@@ -2,12 +2,13 @@ module App.Handler.Messenger (
   messengerWebhook
   ) where
 
+import App.Types (WebhookEffs)
 import Control.Monad.Eff.Class (liftEff)
 import Control.Monad.Eff.Console (error, log)
 import Data.Either (Either(..))
 import Data.Maybe (Maybe(..))
 import Messenger.Bot (getMessageEvent, messageEventRunner)
-import Messenger.Model.MessageEvent (EventAction, MessageEffs, Response, WebHookEffs)
+import Messenger.Model.MessageEvent (EventAction, MessageEffs, Response)
 import Messenger.Types (SendEff)
 import Node.Express.Response (setStatus)
 import Prelude (pure, ($), bind)
@@ -17,7 +18,7 @@ messageEventHandler eventAction = do
   liftEff $ log "handler"
   pure $ Nothing
 
-messengerWebhook :: forall e. WebHookEffs e
+messengerWebhook :: forall e. WebhookEffs e
 messengerWebhook = do
   -- get userId param to respond to particular user
   liftEff $ log $ "message webhook"

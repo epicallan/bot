@@ -2,7 +2,7 @@ module App.Handler.User where
 import App.Config.Config (jwtSecret)
 import App.Foreign (createJwtToken)
 import App.Model.User (User, createUser)
-import App.Types (JWToken, AuthEffs, DbRef, WebHookHEffs)
+import App.Types (JWToken, AuthEffs, DbRef, AddWebHookEffs)
 import Control.Monad.Eff.Class (liftEff)
 import Control.Monad.Eff.Console (log)
 import Control.Monad.Eff.Exception (message)
@@ -65,7 +65,7 @@ indexHandler = send "You have been signed up" -- TODO redirect to login page on 
 --           Right id -> send $ "authenticated with" <> id
 
 
-addFbWebhook :: forall e. DbRef -> WebHookHEffs e
+addFbWebhook :: forall e. DbRef -> AddWebHookEffs e
 addFbWebhook dbRef = do
   eitherDb <- liftEff $ readRef dbRef
   case eitherDb of
