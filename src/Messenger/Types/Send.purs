@@ -1,4 +1,4 @@
-module Messenger.Model.Send where
+module Messenger.Types.Send where
 
 import Messenger.Types (UserId)
 

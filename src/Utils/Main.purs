@@ -5,5 +5,6 @@ import Data.List.Types (toList)
 import Data.Foldable (foldl)
 import Prelude ((<>), ($))
 
-multpleErrorsToStr :: MultipleErrors -> String -- lets change to traverse_
-multpleErrorsToStr x = foldl (\acc cur -> renderForeignError cur <> acc) "" $ toList x
+multpleErrorsToStr :: MultipleErrors -> String
+multpleErrorsToStr x =
+  foldl (\acc cur -> renderForeignError cur <> "\n" <> acc) "" $ toList x

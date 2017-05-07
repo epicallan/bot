@@ -32,18 +32,18 @@ addDbRef dbRef = void $ launchAff do
 
 appSetup :: forall e. DbRef -> AppSetupEffs (passport :: PASSPORT | e)
 appSetup dbRef = do
-    useExternal               F.morgan
-    useExternal               F.jsonBodyParser
-    useExternal               F.passportInitialize
-    liftEff $                 F.googleAuthStrategy googleStrategy
-    get "/login"              loginHandler
-    get "/"                   indexHandler
-    get "/webhook/:userId"    messengerWebhook
-    get "/auth/google/"       F.googleAuth
-    get "/auth/google/return" (F.googleAuthReturn authHandler dbRef)
-    useAt "/protected/*"      (F.protectedRoutesHandler jwtSecret)
-    useAt "/protected/*"      (F.setUserJwData)
-    get "/protected/user/webhook" (addFbWebhook dbRef)
+    useExternal                   F.morgan
+    useExternal                   F.jsonBodyParser
+    useExternal                   F.passportInitialize
+    liftEff $                     F.googleAuthStrategy googleStrategy
+    get "/login"                  loginHandler
+    get "/"                       indexHandler
+    get "/webhook/:userId"        messengerWebhook
+    get "/auth/google/"           F.googleAuth
+    get "/auth/google/return"     $ F.googleAuthReturn authHandler dbRef
+    useAt "/protected/*"          $ F.protectedRoutesHandler jwtSecret
+    useAt "/protected/*"          F.setUserJwData
+    get "/protected/user/webhook" $ addFbWebhook dbRef
 
 main :: forall e. AppEffs (passport :: PASSPORT | e) Server
 main = do

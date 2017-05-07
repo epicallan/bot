@@ -1,4 +1,4 @@
-module Messenger.Model.MessageEvent where
+module Messenger.Types.MessageEvent where
 
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Console (CONSOLE)

@@ -1,8 +1,10 @@
 module App.Handler.User where
+import Messenger.Webhook as Wb
 import App.Config.Config (jwtSecret)
 import App.Foreign (createJwtToken)
 import App.Model.User (User, createUser)
 import App.Types (JWToken, AuthEffs, DbRef, AddWebHookEffs)
+import Control.Monad ((*>))
 import Control.Monad.Eff.Class (liftEff)
 import Control.Monad.Eff.Console (log)
 import Control.Monad.Eff.Exception (message)
@@ -16,7 +18,6 @@ import Data.Maybe (Maybe(..))
 import Node.Express.Handler (Handler)
 import Node.Express.Request (getUserData)
 import Node.Express.Response (send, setStatus)
-import Messenger.Webhook as Wb
 import Prelude (bind, pure, ($), (<>))
 
 
@@ -34,18 +35,16 @@ authHandler :: forall e. DbRef -> Foreign -> AuthEffs e JWToken
 authHandler dbRef userPayload = do
     eitherDb <- liftEff $ readRef dbRef
     case eitherDb of
-      Left err -> do
-        liftEff $ log $ "Error connecting to the database for authentication " <> message err
-        pure jwtoken
+      Left err ->
+        (liftEff $ log $ "Error connecting to the database" <> message err) *> pure jwtoken
       Right db -> do
         let eitherUser = parseUserRes userPayload
         case eitherUser of
-          Left err -> do
-            liftEff $ log $ "User parse error: " <> err
-            pure jwtoken
-          Right user -> do
-            liftEff $ createUser db user
-            pure { token : createJwtToken jwtSecret user }
+          Left err ->
+            (liftEff $ log $ "User parse error: " <> err) *> pure jwtoken
+          Right user ->
+            (liftEff $ createUser db user) *> pure { token : createJwtToken jwtSecret user }
+
 
 loginHandler :: forall e. Handler e
 loginHandler = send "Please go and login" -- TODO redirect to login page on front end app
@@ -71,7 +70,7 @@ addFbWebhook dbRef = do
   case eitherDb of
     Left err -> do
       liftEff $ log $ "Error connecting to the database " <> message err
-      setStatus 400
+      setStatus 500
     Right db -> do
       maybeId <- getUserData "id"
       case maybeId of
@@ -80,6 +79,4 @@ addFbWebhook dbRef = do
           let eitherId = runExcept(readString foreignId :: F String)
           in case eitherId of
               Left _ -> send "Error reading authentication ID"
-              Right id -> do
-                liftEff $ Wb.main db id
-                send "set up webhook"
+              Right id -> (liftEff $ Wb.main db id) *> (send "set up webhook")

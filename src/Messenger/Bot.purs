@@ -4,7 +4,7 @@ module Messenger.Bot (
   ) where
 import Control.Bind ((>>=))
 import Control.Monad.Eff.Class (liftEff)
-import Control.Monad.Eff.Console (info, log, warn)
+import Control.Monad.Eff.Console (info, warn)
 import Control.Monad.Except (runExcept)
 import Data.Either (Either(..))
 import Data.Foldable (traverse_)
@@ -12,21 +12,13 @@ import Data.Foreign (F)
 import Data.Foreign.Class (readJSON)
 import Data.Foreign.NullOrUndefined (unNullOrUndefined)
 import Data.Maybe (Maybe(..), maybe)
-import Data.Tuple (Tuple(..))
-import Messenger.Model.MessageEvent (EventAction(..), MessageEffs, MessageEntry(..), MessageEvent(..), Messaging(..), Response(..))
+import Messenger.Send (sendResponse)
 import Messenger.Types (SendEff)
+import Messenger.Types.MessageEvent (EventAction(..), MessageEntry(..), MessageEvent(..), Messaging(..), Response)
 import Node.Express.Handler (HandlerM)
 import Node.Express.Request (getBody)
 import Node.Express.Types (EXPRESS)
 import Prelude (Unit, bind, join, map, pure, ($))
-
-
-sendResponse :: forall e. Response -> MessageEffs e Unit
-sendResponse response = case response of
-  Text (Tuple id msg)  -> log "hey"
-  Image (Tuple id msg) -> log "hey"
-  Audio (Tuple id msg) -> log "hey"
-  Video (Tuple id msg) -> log "hey"
 
 
 

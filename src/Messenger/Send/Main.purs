@@ -1,18 +1,18 @@
-module Messenger.Send.Send where
+module Messenger.Send where
 
 import Control.Monad.Aff (Aff, attempt, launchAff)
 import Control.Monad.Aff.Console (error, info)
 import Control.Monad.Eff.Class (liftEff)
 import Control.Monad.Eff.Console (CONSOLE, log)
-import Control.Monad.Eff.Exception (EXCEPTION, message)
+import Control.Monad.Eff.Exception (message)
 import Control.Monad.Except (runExcept)
 import Data.Argonaut (Json)
 import Data.Either (Either(..))
 import Data.Foreign (F)
 import Data.Foreign.Class (readJSON)
 import Data.Tuple (Tuple(..))
-import Messenger.Model.MessageEvent (Response(..))
-import Messenger.Model.Send (TextMessage)
+import Messenger.Types.MessageEvent (Response(..))
+import Messenger.Types.Send (TextMessage)
 import Messenger.Types (SendResponse, SendEff)
 import Network.HTTP.Affjax (post, AJAX)
 import Prelude (Unit, bind, void, ($), (<>), show)

@@ -4,8 +4,10 @@ import Control.Monad.Aff (Aff)
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Console (CONSOLE)
 import Control.Monad.Eff.Exception (EXCEPTION)
-import Data.Argonaut (jsonEmptyObject, (:=), (~>))
+import Data.Argonaut (jsonEmptyObject, (.?), (:=), (~>))
 import Data.Argonaut.Encode.Class (class EncodeJson)
+import Data.Argonaut.Decode.Class (class DecodeJson)
+import Data.Argonaut.Decode (decodeJson)
 import Data.Foreign.Class (class IsForeign)
 import Data.Foreign.Generic (defaultOptions, readGeneric)
 import Data.Generic.Rep (class Generic)
@@ -13,7 +15,7 @@ import Data.Generic.Rep.Show (genericShow)
 import Database.Mongo.Mongo (DB)
 import Messenger.Foreign (Ngrok)
 import Network.HTTP.Affjax (AJAX, URL)
-import Prelude (class Show, Unit)
+import Prelude (class Show, Unit, bind, ($), pure)
 
 type FbBase = URL
 
@@ -27,6 +29,28 @@ type WebHookSetUpEffs e = Eff (ngrok:: Ngrok, ajax :: AJAX, db :: DB, err:: EXCE
 type WebHookSetUpAff e = Aff (ngrok:: Ngrok, ajax :: AJAX, db :: DB, console :: CONSOLE | e) Unit
 
 type SendEff e a = Eff (ajax :: AJAX, console :: CONSOLE, err :: EXCEPTION | e) a
+
+newtype Webhook = Webhook
+  { userId :: String
+  , url :: URL
+  , accessToken :: AccessToken
+  }
+
+instance decodeJsonWebhook :: DecodeJson Webhook where
+  decodeJson json = do
+    obj  <- decodeJson json
+    userId <- obj .? "userId"
+    url <-  obj .? "url"
+    accessToken <-  obj .? "accessToken"
+    pure $ Webhook { userId, url, accessToken }
+
+instance encodeJsonWebhook :: EncodeJson Webhook where
+  encodeJson (Webhook webhook)
+    =   "userId" := webhook.userId
+    ~>  "url" := webhook.url
+    ~>  "accessToken" := webhook.accessToken
+    ~> jsonEmptyObject
+
 
 -- | post response from send API
 newtype SendResponse = SendResponse
