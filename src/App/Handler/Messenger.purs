@@ -13,7 +13,7 @@ import Control.Monad.Eff.Ref (readRef)
 import Data.Either (Either(..))
 import Data.Maybe (Maybe(..))
 import Messenger.Bot (getMessageEvent, messageEventRunner)
-import Messenger.Types (SendEff)
+import Messenger.Types (SendEff, Webhook(..))
 import Messenger.Types.MessageEvent (EventAction, Response)
 import Node.Express.Request (getRouteParam)
 import Node.Express.Response (setStatus)
@@ -44,8 +44,8 @@ messengerWebhook dbRef = do
               (liftEff $ runMe userId db messageEvent) *> setStatus 200
   where
     runMe userId db me  = void $ launchAff do
-        maybeToken <- findByUserId db "webhooks" userId
-        case maybeToken of
+        (maybeWb :: Maybe Webhook) <- findByUserId db "webhooks" userId
+        case maybeWb of
           Nothing -> (liftEff $ error $ "No accessToken") *> (pure unit)
-          Just token ->
-            (liftEff $ messageEventRunner messageEventHandler token me) *> (pure unit)
+          Just (Webhook wb) ->
+            (liftEff $ messageEventRunner messageEventHandler wb.accessToken me) *> (pure unit)

@@ -18,7 +18,7 @@ import Prelude (bind, pure, ($), Unit, unit, (<>))
 
 findByUserId :: forall e a. (EncodeJson a, DecodeJson a) =>
             Database -> String ->  UserId -> Aff (db :: DB| e) (Maybe a)
-findByUserId database userId colName = do
+findByUserId database colName userId = do
   col <- collection colName database
   (eitherAccessT :: Either Error a) <- attempt $ findOne [ "id" B.:= userId ] [] col
   case eitherAccessT of

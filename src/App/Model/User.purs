@@ -1,11 +1,11 @@
 module App.Model.User where
 import Database.Mongo.Bson.BsonValue as B
-import Control.Monad (void)
+import Control.Monad (void, (*>))
 import Control.Monad.Aff (Aff, attempt, launchAff)
 import Control.Monad.Aff.Console (CONSOLE)
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Class (liftEff)
-import Control.Monad.Eff.Console (log)
+import Control.Monad.Eff.Console (log, info)
 import Control.Monad.Eff.Exception (EXCEPTION, Error)
 import Data.Argonaut (jsonEmptyObject, (.?), (:=), (~>))
 import Data.Argonaut.Decode (decodeJson)
@@ -15,7 +15,8 @@ import Data.Either (Either(..), either)
 import Data.Maybe (Maybe(..))
 import Database.Mongo.Mongo (DB, Database, collect, collection, find, findOne, insertOne)
 import Database.Mongo.Options (defaultInsertOptions)
-import Prelude (Unit, bind, pure, unit, ($), (<<<), const)
+import Prelude (Unit, bind, pure, unit, ($), (<<<), const, (<>))
+import Utils (findByUserId)
 import Data.Array hiding (find)
 
 newtype User = User
@@ -51,16 +52,15 @@ instance encodeJsonUser :: EncodeJson User where
     ~> jsonEmptyObject
 
 -- | creates user if user doesnt exit
-createUser :: forall e. Database -> User -> Eff (db :: DB, err :: EXCEPTION | e) Unit
+createUser :: forall e. Database -> User -> Eff (db :: DB, console :: CONSOLE, err :: EXCEPTION | e) Unit
 createUser database user@(User u) =
   void $ launchAff $ do
     col <- collection userCol database
-    (eitherUser :: Either Error User) <- attempt $ findOne [ "id" B.:= u.id ] [] col
-    case eitherUser of
-      Left _ -> do
-        insertOne user defaultInsertOptions col
-        pure unit
-      Right _ -> pure unit
+    (maybeUser :: Maybe User) <- (findByUserId database u.id userCol)
+    case maybeUser of
+      Nothing -> (insertOne user defaultInsertOptions col) *> pure unit
+      Just (User dbUser) ->
+        (liftEff $ info $ "user exist" <> dbUser.id ) *> pure unit
 
 findUser :: forall e. UserId -> Database -> Aff (db :: DB, console :: CONSOLE | e) (Maybe User)
 findUser userId database = do
