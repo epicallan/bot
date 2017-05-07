@@ -14,5 +14,5 @@ findWebhook :: forall e. Database -> UserId -> Aff (db :: DB| e) (Maybe Webhook)
 findWebhook database userId = findByUserId database "webhooks" userId
 
 saveWebhook :: forall e. Database -> UserId -> URL -> AccessToken -> Aff (db :: DB | e) Unit
-saveWebhook database userId url accessToken =
-  save' database "webhooks" (Webhook { userId, url, accessToken })
+saveWebhook database id url accessToken =
+  save' database "webhooks" (Webhook { id, url, accessToken })

@@ -31,7 +31,7 @@ type WebHookSetUpAff e = Aff (ngrok:: Ngrok, ajax :: AJAX, db :: DB, console :: 
 type SendEff e a = Eff (ajax :: AJAX, console :: CONSOLE, err :: EXCEPTION | e) a
 
 newtype Webhook = Webhook
-  { userId :: String
+  { id :: String
   , url :: URL
   , accessToken :: AccessToken
   }
@@ -39,14 +39,14 @@ newtype Webhook = Webhook
 instance decodeJsonWebhook :: DecodeJson Webhook where
   decodeJson json = do
     obj  <- decodeJson json
-    userId <- obj .? "userId"
+    id <- obj .? "id"
     url <-  obj .? "url"
     accessToken <-  obj .? "accessToken"
-    pure $ Webhook { userId, url, accessToken }
+    pure $ Webhook { id, url, accessToken }
 
 instance encodeJsonWebhook :: EncodeJson Webhook where
   encodeJson (Webhook webhook)
-    =   "userId" := webhook.userId
+    =   "id" := webhook.id
     ~>  "url" := webhook.url
     ~>  "accessToken" := webhook.accessToken
     ~> jsonEmptyObject
