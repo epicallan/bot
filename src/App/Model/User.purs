@@ -62,11 +62,11 @@ createUser database user@(User u) =
         pure unit
       Right _ -> pure unit
 
--- findUser :: forall e. UserId -> Database -> Aff (db :: DB, console :: CONSOLE | e) (Maybe User)
--- findUser userId database = do
---   col <- collection userCol database
---   (eitherUser :: Either Error User) <- attempt $ findOne [ "id" B.:= userId ] [] col
---   either (pure <<< const Nothing) (pure <<< Just) eitherUser
+findUser :: forall e. UserId -> Database -> Aff (db :: DB, console :: CONSOLE | e) (Maybe User)
+findUser userId database = do
+  col <- collection userCol database
+  (eitherUser :: Either Error User) <- attempt $ findOne [ "id" B.:= userId ] [] col
+  either (pure <<< const Nothing) (pure <<< Just) eitherUser
 
 findUsers :: forall e. Database -> Aff (db :: DB, console :: CONSOLE | e) (Maybe Users)
 findUsers database = do
