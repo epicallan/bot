@@ -11,9 +11,9 @@ import Data.Either (Either(..))
 import Data.Foreign (F)
 import Data.Foreign.Class (readJSON)
 import Data.Tuple (Tuple(..))
+import Messenger.Types (SendEff, SendResponse, AccessToken)
 import Messenger.Types.MessageEvent (Response(..))
 import Messenger.Types.Send (TextMessage)
-import Messenger.Types (SendResponse, SendEff)
 import Network.HTTP.Affjax (post, AJAX)
 import Prelude (Unit, bind, void, ($), (<>), show)
 import Unsafe.Coerce (unsafeCoerce)
@@ -22,22 +22,22 @@ import Utils (multpleErrorsToStr)
 unsafelyToRequestable :: forall a. a -> Json
 unsafelyToRequestable = unsafeCoerce
 
-sendResponse :: forall e. Response -> SendEff e Unit
-sendResponse response = void $ launchAff do
+sendResponse :: forall e. AccessToken -> Response -> SendEff e Unit
+sendResponse token response = void $ launchAff do
   case response of
     Text (Tuple id text)  -> do
       let mRequest = { recipient: { id }, message : { text } } :: TextMessage
-      callSenderAPI mRequest
+      callSenderAPI token mRequest
     Image (Tuple id msg) -> info "hey"
     Video (Tuple id msg) -> info "hey"
     Audio (Tuple id msg) -> info "hey"
 
 
 
-callSenderAPI :: forall e a. a -> Aff (ajax :: AJAX,  console :: CONSOLE | e) Unit
-callSenderAPI req = do
+callSenderAPI :: forall e a. AccessToken -> a -> Aff (ajax :: AJAX,  console :: CONSOLE | e) Unit
+callSenderAPI token req = do
   liftEff $ log "sending json"
-  eitherRes  <- attempt $ post "url" (unsafelyToRequestable req)
+  eitherRes  <- attempt $ post ("url/" <> token) $ unsafelyToRequestable req
   case eitherRes of
     Left err      -> error $ message err
     Right payload -> do

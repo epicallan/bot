@@ -20,7 +20,6 @@ import Node.Express.Request (getUserData)
 import Node.Express.Response (send, setStatus)
 import Prelude (bind, pure, ($), (<>))
 
-
 unsafelyToJson :: Foreign -> Json
 unsafelyToJson = unsafeFromForeign
 

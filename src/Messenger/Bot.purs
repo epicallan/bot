@@ -13,7 +13,7 @@ import Data.Foreign.Class (readJSON)
 import Data.Foreign.NullOrUndefined (unNullOrUndefined)
 import Data.Maybe (Maybe(..), maybe)
 import Messenger.Send (sendResponse)
-import Messenger.Types (SendEff)
+import Messenger.Types (SendEff, AccessToken)
 import Messenger.Types.MessageEvent (EventAction(..), MessageEntry(..), MessageEvent(..), Messaging(..), Response)
 import Node.Express.Handler (HandlerM)
 import Node.Express.Request (getBody)
@@ -35,14 +35,16 @@ getEventAction (Messaging ms) =
             Nothing -> Nothing
 
 
-messageEventRunner :: forall e. (EventAction -> SendEff e (Maybe Response)) -> MessageEvent -> SendEff e Unit
-messageEventRunner handler (MessageEvent messageEvent@{ object, entry})   = do
+messageEventRunner :: forall e. (EventAction -> SendEff e (Maybe Response))
+                  -> AccessToken -> MessageEvent -> SendEff e Unit
+messageEventRunner handler token (MessageEvent messageEvent@{ object, entry}) = do
   let eventActions = join $ map (\(MessageEntry messageEntry@{ messaging }) -> map getEventAction messaging) entry
+      sendResponse' = sendResponse token
   liftEff $ traverse_ (\eventAction ->
       case eventAction of
         Nothing    -> liftEff $ info "No event"
         Just event ->
-          handler event >>= (maybe (liftEff $ warn "no Response") sendResponse)
+          handler event >>= (maybe (liftEff $ warn "no Response") sendResponse')
           ) eventActions
 
 getMessageEvent :: forall e. HandlerM (express :: EXPRESS | e) (Either String MessageEvent)
