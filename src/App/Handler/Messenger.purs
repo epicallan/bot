@@ -7,11 +7,13 @@ import Control.Monad.Eff.Console (CONSOLE, log)
 import Control.Monad.Eff.Exception (message, error)
 import Control.Monad.Eff.Ref (readRef)
 import Data.Either (Either(..))
+import Data.Foreign.NullOrUndefined (unNullOrUndefined)
 import Data.Maybe (Maybe(..))
+import Data.Tuple (Tuple(..))
 import Messenger.Bot (getMessageEvent, messageEventRunner)
 import Messenger.Config (fbConf)
 import Messenger.Types (SendEff)
-import Messenger.Types.MessageEvent (EventAction, Response)
+import Messenger.Types.MessageEvent (EventAction(..), Message(..), Response(..), Meta)
 import Node.Express.Handler (Handler, next, nextThrow)
 import Node.Express.Request (getQueryParam, getRouteParam)
 import Node.Express.Response (send, setStatus)
@@ -23,10 +25,20 @@ errorLogger :: forall e. String -> Handler (console :: CONSOLE | e)
 errorLogger errorMsg = do
   (liftEff $ log errorMsg) *> (nextThrow $ error errorMsg)
 
+
+handleMessage :: forall e. Message -> Meta -> SendEff e (Maybe Response)
+handleMessage  (Message msg) meta = do
+  let text = unNullOrUndefined msg.text
+  case text of
+    Nothing   -> pure Nothing
+    Just txt  ->
+      pure $ Just $ Text $ Tuple meta.sender $ "echoed back: "<> txt
+
 messageEventHandler :: forall e. EventAction -> SendEff e (Maybe Response)
 messageEventHandler eventAction = do
-  liftEff $ log "handler"
-  pure $ Nothing
+  case eventAction of
+    EventM (Tuple message meta) -> handleMessage message meta
+    _              -> pure $ Nothing
 
 verifyFbRequests :: forall e. Handler (console :: CONSOLE | e)
 verifyFbRequests = do

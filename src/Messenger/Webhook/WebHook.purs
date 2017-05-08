@@ -71,7 +71,7 @@ setupFbWebhook database userId = do
     Left err  -> log $ message err
     Right ngrokUrl -> do
       let userWbUrl = ngrokUrl <> "/webhook/" <> userId
-      initfbWebhook fbConf userWbUrl *> saveWebhook database userId userWbUrl
+      initfbWebhook fbConf userWbUrl *> saveWebhook database userId userWbUrl -- TODO we may not need to save the webhook url afterall
 
 main :: forall e. Database -> UserId -> WebHookSetUpEffs e
 main database userId = void $ launchAff do

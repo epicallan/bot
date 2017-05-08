@@ -2,11 +2,13 @@ module Messenger.Types.MessageEvent where
 
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Console (CONSOLE)
+import DOM.Event.Event (timeStamp)
 import Data.Foreign.Class (class IsForeign)
 import Data.Foreign.Generic (defaultOptions, readGeneric)
 import Data.Foreign.NullOrUndefined (NullOrUndefined)
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
+import Data.Newtype (class Newtype)
 import Data.Tuple (Tuple)
 import Messenger.Types (SenderId)
 import Network.HTTP.Affjax (AJAX)
@@ -55,6 +57,8 @@ newtype Read = Read
 
 newtype SenderRecipientId = SenderRecipientId { id :: String }
 
+derive instance newtypeSenderRecipientId :: Newtype SenderRecipientId _
+
 newtype Messaging = Messaging
   { sender :: SenderRecipientId
   , recipient :: SenderRecipientId
@@ -63,6 +67,7 @@ newtype Messaging = Messaging
   , message :: NullOrUndefined Message
   , read :: NullOrUndefined Read
   }
+-- derive instance newtypeSenderMessaging :: Newtype  Messaging _
 
 newtype MessageEntry = MessageEntry
   { id :: String
@@ -75,7 +80,16 @@ newtype MessageEvent = MessageEvent
   , entry :: Array MessageEntry
   }
 
-data EventAction = EventP Postback | EventM Message |  EventR Read
+type Meta =
+  { id :: String
+  , time :: Int
+  , timestamp :: Int
+  , sender :: String
+  , recipient :: String
+  }
+
+data EventAction = EventP (Tuple Postback Meta)
+  | EventM (Tuple Message Meta) |  EventR (Tuple Read Meta)
 
 type SendPayload = Tuple SenderId String
 

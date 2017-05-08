@@ -5,7 +5,7 @@ module Messenger.Model.Webhook (
 import Control.Monad.Aff (Aff)
 import Data.Maybe (Maybe)
 import Database.Mongo.Mongo (DB, Database)
-import Messenger.Types (AccessToken, UserId, Webhook(..))
+import Messenger.Types (UserId, Webhook(..))
 import Network.HTTP.Affjax (URL)
 import Prelude (Unit)
 import Utils (save', findByUserId)
