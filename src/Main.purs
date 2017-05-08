@@ -2,18 +2,20 @@ module Main where
 import App.Foreign as F
 import App.Config.Config (googleStrategy, jwtSecret)
 import App.Foreign (PASSPORT)
-import App.Handler.Messenger (messengerWebhook)
-import App.Handler.User (authHandler, indexHandler, loginHandler, addFbWebhook)
+import App.Handler.Messenger (messengerWebhookG, messengerWebhookP, verifyFbRequests)
+import App.Handler.User (authHandler, indexHandler, addFbWebhook)
 import App.Types (AppDb, DbRef, AppSetupEffs, AppEffs)
 import Control.Monad.Aff (attempt, launchAff)
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Class (liftEff)
 import Control.Monad.Eff.Console (CONSOLE, log)
-import Control.Monad.Eff.Exception (EXCEPTION, error)
+import Control.Monad.Eff.Exception (EXCEPTION, Error, error, message)
 import Control.Monad.Eff.Ref (REF, newRef, writeRef)
 import Data.Either (Either(..))
 import Database.Mongo.Mongo (DB, connect)
-import Node.Express.App (get, listenHttp, useAt, useExternal)
+import Node.Express.App (get, listenHttp, post, useAt, useExternal, useOnError)
+import Node.Express.Handler (Handler)
+import Node.Express.Response (sendJson, setStatus)
 import Node.HTTP (Server)
 import Prelude hiding (apply)
 
@@ -30,20 +32,28 @@ addDbRef dbRef = void $ launchAff do
   liftEff $ writeRef dbRef (eitherDatabase :: AppDb)
   liftEff $ log "connected to db"
 
+errorHandler :: forall e. Error -> Handler e
+errorHandler err = do
+  setStatus 400
+  sendJson {error: message err}
+
+
 appSetup :: forall e. DbRef -> AppSetupEffs (passport :: PASSPORT | e)
 appSetup dbRef = do
     useExternal                   F.morgan
     useExternal                   F.jsonBodyParser
     useExternal                   F.passportInitialize
     liftEff $                     F.googleAuthStrategy googleStrategy
-    get "/login"                  loginHandler
     get "/"                       indexHandler
-    get "/webhook/:userId"        $ messengerWebhook dbRef
+    useAt "/webhook/*"            verifyFbRequests
+    post "/webhook/:userId"       $ messengerWebhookP dbRef
+    get "/webhook/:userId"        messengerWebhookG
     get "/auth/google/"           F.googleAuth
     get "/auth/google/return"     $ F.googleAuthReturn authHandler dbRef
     useAt "/protected/*"          $ F.protectedRoutesHandler jwtSecret
     useAt "/protected/*"          F.setUserJwData
     get "/protected/user/webhook" $ addFbWebhook dbRef
+    useOnError                    errorHandler
 
 main :: forall e. AppEffs (passport :: PASSPORT | e) Server
 main = do

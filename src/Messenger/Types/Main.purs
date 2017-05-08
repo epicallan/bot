@@ -25,6 +25,13 @@ type UserId = String
 
 type AccessToken = String
 
+type FbMessengerConf =
+  { appSecret :: String
+  , appId :: String
+  , verifyToken :: String
+  , accessToken :: AccessToken
+  }
+
 type WebHookSetUpEffs e = Eff (ngrok:: Ngrok, ajax :: AJAX, db :: DB, err:: EXCEPTION, console :: CONSOLE | e) Unit
 type WebHookSetUpAff e = Aff (ngrok:: Ngrok, ajax :: AJAX, db :: DB, console :: CONSOLE | e) Unit
 
@@ -33,7 +40,6 @@ type SendEff e a = Eff (ajax :: AJAX, console :: CONSOLE, err :: EXCEPTION | e) 
 newtype Webhook = Webhook
   { id :: String
   , url :: URL
-  , accessToken :: AccessToken
   }
 
 instance decodeJsonWebhook :: DecodeJson Webhook where
@@ -41,14 +47,12 @@ instance decodeJsonWebhook :: DecodeJson Webhook where
     obj  <- decodeJson json
     id <- obj .? "id"
     url <-  obj .? "url"
-    accessToken <-  obj .? "accessToken"
-    pure $ Webhook { id, url, accessToken }
+    pure $ Webhook { id, url}
 
 instance encodeJsonWebhook :: EncodeJson Webhook where
   encodeJson (Webhook webhook)
     =   "id" := webhook.id
     ~>  "url" := webhook.url
-    ~>  "accessToken" := webhook.accessToken
     ~> jsonEmptyObject
 
 
@@ -70,7 +74,10 @@ instance showFbGenericResponse :: Show FbGenericResponse where show = genericSho
 instance isForeignFbGenericResponse :: IsForeign FbGenericResponse where
   read x = readGeneric (defaultOptions { unwrapSingleConstructors = true }) x
 
-newtype AccessTokenJson = AccessTokenJson { token :: String }
+newtype AccessTokenJson = AccessTokenJson
+  { access_token :: String
+  , token_type   :: String
+  }
 
 derive instance genericAccessTokenJson :: Generic AccessTokenJson _
 instance showAccessTokenJson :: Show AccessTokenJson where show = genericShow
@@ -79,15 +86,15 @@ instance isForeignAccessTokenJson :: IsForeign AccessTokenJson where
 
 newtype FbWebhookRequest = FbWebhookRequest
   { object :: String
-  , callbackUrl :: String
-  , verifyToken :: String
+  , callback_url :: String
+  , verify_token :: String
   , fields :: Array String
   }
 
 instance encodeJsonFbWebhookRequest :: EncodeJson FbWebhookRequest where
   encodeJson (FbWebhookRequest fbwr)
     =   "object" := fbwr.object
-    ~>  "callback_url" := fbwr.callbackUrl
-    ~>  "verify_token" := fbwr.verifyToken
+    ~>  "callback_url" := fbwr.callback_url
+    ~>  "verify_token" := fbwr.verify_token
     ~>  "fields" := fbwr.fields
     ~> jsonEmptyObject

@@ -10,55 +10,58 @@ import Data.Argonaut.Encode (encodeJson)
 import Data.Either (Either(..))
 import Data.Foreign (F)
 import Data.Foreign.Class (readJSON)
-import Data.Maybe (Maybe(..), maybe)
+import Data.Maybe (Maybe(..))
 import Database.Mongo.Mongo (Database)
-import Messenger.Config (FbMessengerConf, fbConf)
+import Messenger.Config (fbConf)
 import Messenger.Foreign (createNgrokProxy')
 import Messenger.Model.Webhook (saveWebhook, findWebhook)
-import Messenger.Types (AccessTokenJson(..), FbBase, FbWebhookRequest(..), UserId, WebHookSetUpAff, WebHookSetUpEffs, AccessToken)
+import Messenger.Types (FbMessengerConf, AccessToken, AccessTokenJson(..), FbBase, FbWebhookRequest(..), UserId, WebHookSetUpAff, WebHookSetUpEffs, Webhook)
 import Network.HTTP.Affjax (AJAX, URL, get, post)
-import Prelude (bind, ($), (<>), pure, void)
+import Prelude (bind, show, void, ($), (<>), Unit)
 import Utils (multpleErrorsToStr)
 
-fbBase = "https://graph.facebook.com/v2.7/oauth/access_token" :: FbBase
+fbBase = "https://graph.facebook.com" :: FbBase
 
 -- | for getting access_token
 fbOauthUrl ::  FbMessengerConf -> String
-fbOauthUrl conf = fbBase
+fbOauthUrl conf = fbBase <> "/v2.8/oauth/access_token"
   <> "?client_id=" <> conf.appId
   <> "&client_secret=" <> conf.appSecret
   <> "&grant_type=client_credentials"
 
 fbPostsubcriptionUrl :: FbMessengerConf -> AccessToken -> URL
 fbPostsubcriptionUrl conf accessToken
-  = fbBase <> conf.appId <> "/subscriptions?access_token=" <> accessToken
+  = fbBase <> "/" <> conf.appId <> "/subscriptions?access_token=" <> accessToken
 
 fbWebhookRequestJson :: URL -> FbMessengerConf -> Json
 fbWebhookRequestJson callbackurl conf  =
       let fields = ["message_deliveries", "message_reads", "messages", "messaging_optins",
                   "messaging_postbacks", "messaging_referrals"]
           fbWebhookRequest = FbWebhookRequest { object : "page"
-                                              , verifyToken : conf.verifyToken
-                                              , callbackUrl : callbackurl
+                                              , verify_token : conf.verifyToken
+                                              , callback_url : callbackurl
                                               , fields }
   in encodeJson $ fbWebhookRequest
 
 initfbWebhook :: forall e. FbMessengerConf -> URL
-                  -> Aff (ajax :: AJAX,  console :: CONSOLE | e) (Maybe AccessToken)
+                  -> Aff (ajax :: AJAX,  console :: CONSOLE | e) Unit
 initfbWebhook conf url = do
   eitherRes <- attempt $ get $ fbOauthUrl conf
   case eitherRes of
-    Left err  -> (error $ message err) *> pure Nothing
+    Left err  -> error $ "fboauth access: " <> message err
     Right fbAuthRes -> do
       let eitherJson = runExcept $ readJSON fbAuthRes.response :: F AccessTokenJson
+      info $ "fb response: " <> fbAuthRes.response
       case eitherJson of
         Left errors ->
-          (error $ "error reading auth Json" <> multpleErrorsToStr errors) *> pure Nothing
-        Right (AccessTokenJson { token }) -> do
-          fbGenEither <- attempt $ post (fbPostsubcriptionUrl conf token) $ fbWebhookRequestJson url conf
+          error $ "error reading auth Json: " <> multpleErrorsToStr errors
+        Right (AccessTokenJson { access_token }) -> do
+          let payload = fbWebhookRequestJson url conf
+          info $ " payload: \n " <> (show $ encodeJson payload)
+          fbGenEither <- attempt $ post (fbPostsubcriptionUrl conf access_token) $ payload
           case fbGenEither of
-            Left err -> (error $ message err) *> pure Nothing
-            Right res -> (info res.response) *> (pure $ Just token)
+            Left err  -> error $ message err
+            Right res -> info  $ "added webhook: " <> res.response
 
 
 setupFbWebhook :: forall e. Database -> UserId -> WebHookSetUpAff e
@@ -67,13 +70,12 @@ setupFbWebhook database userId = do
   case eitherUrl of
     Left err  -> log $ message err
     Right ngrokUrl -> do
-      let userWbUrl = ngrokUrl <> "webhook/" <> userId
-      maybeAccessToken <- initfbWebhook fbConf userWbUrl
-      maybe (error $ "No accessToken") (saveWebhook database userId userWbUrl) maybeAccessToken
+      let userWbUrl = ngrokUrl <> "/webhook/" <> userId
+      initfbWebhook fbConf userWbUrl *> saveWebhook database userId userWbUrl
 
 main :: forall e. Database -> UserId -> WebHookSetUpEffs e
 main database userId = void $ launchAff do
-  maybeWebhook <- findWebhook database userId
+  (maybeWebhook :: Maybe Webhook) <- findWebhook database userId
   case maybeWebhook of
     Nothing -> setupFbWebhook database userId
-    Just webhook -> info "using webhook: "
+    Just wb -> info $ "Already using webhook: " <> (show $ encodeJson wb)

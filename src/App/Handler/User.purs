@@ -45,11 +45,8 @@ authHandler dbRef userPayload = do
             (liftEff $ createUser db user) *> pure { token : createJwtToken jwtSecret user }
 
 
-loginHandler :: forall e. Handler e
-loginHandler = send "Please go and login" -- TODO redirect to login page on front end app
-
 indexHandler :: forall e. Handler e
-indexHandler = send "You have been signed up" -- TODO redirect to login page on front end app
+indexHandler = (setStatus 200) *> (send "index page") -- TODO redirect to login page on front end app
 
 addFbWebhook :: forall e. DbRef -> AddWebHookEffs e
 addFbWebhook dbRef = do
@@ -61,7 +58,7 @@ addFbWebhook dbRef = do
     Right db -> do
       maybeId <- getUserData "id"
       case maybeId of
-        Nothing -> send "No user Id redirect to login page"
+        Nothing -> send "No user Id redirect to login page" -- TODO redirect to login page on front end app
         Just foreignId ->
           let eitherId = runExcept(readString foreignId :: F String)
           in case eitherId of

@@ -12,6 +12,7 @@ import Data.Foreign (F)
 import Data.Foreign.Class (readJSON)
 import Data.Foreign.NullOrUndefined (unNullOrUndefined)
 import Data.Maybe (Maybe(..), maybe)
+import Messenger.Config (fbConf)
 import Messenger.Send (sendResponse)
 import Messenger.Types (SendEff, AccessToken)
 import Messenger.Types.MessageEvent (EventAction(..), MessageEntry(..), MessageEvent(..), Messaging(..), Response)
@@ -36,10 +37,10 @@ getEventAction (Messaging ms) =
 
 
 messageEventRunner :: forall e. (EventAction -> SendEff e (Maybe Response))
-                  -> AccessToken -> MessageEvent -> SendEff e Unit
-messageEventRunner handler token (MessageEvent messageEvent@{ object, entry}) = do
+                  -> MessageEvent -> SendEff e Unit
+messageEventRunner handler (MessageEvent messageEvent@{ object, entry}) = do
   let eventActions = join $ map (\(MessageEntry messageEntry@{ messaging }) -> map getEventAction messaging) entry
-      sendResponse' = sendResponse token
+      sendResponse' = sendResponse fbConf.accessToken
   liftEff $ traverse_ (\eventAction ->
       case eventAction of
         Nothing    -> liftEff $ info "No event"

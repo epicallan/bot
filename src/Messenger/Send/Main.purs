@@ -37,7 +37,7 @@ sendResponse token response = void $ launchAff do
 callSenderAPI :: forall e a. AccessToken -> a -> Aff (ajax :: AJAX,  console :: CONSOLE | e) Unit
 callSenderAPI token req = do
   liftEff $ log "sending json"
-  eitherRes  <- attempt $ post ("url/" <> token) $ unsafelyToRequestable req
+  eitherRes  <- attempt $ post ( fburl token) $ unsafelyToRequestable req
   case eitherRes of
     Left err      -> error $ message err
     Right payload -> do
@@ -45,3 +45,5 @@ callSenderAPI token req = do
       case eitherSendResponse of
         Left errs -> error $ "sendResponse decoding errors: " <> multpleErrorsToStr errs
         Right res -> info $ show res
+  where
+    fburl = (<>) "https://graph.facebook.com/v2.6/me/messages?access_token="

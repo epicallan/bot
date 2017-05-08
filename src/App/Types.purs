@@ -17,6 +17,14 @@ type DbRef = Ref AppDb
 
 type AppSetupEffs e = App (console :: CONSOLE, err :: EXCEPTION, ref :: REF, ajax :: AJAX, ngrok :: Ngrok, db :: DB | e)
 
+type JWTSecret = String
+
+type GoogleStrategy =
+  { clientID :: String
+  , clientSecret :: String
+  , callBack :: String
+  }
+
 type AppEffs e a = Eff (err :: EXCEPTION, console :: CONSOLE, ref :: REF, ajax :: AJAX, ngrok :: Ngrok, express :: EXPRESS, db :: DB | e ) a
 
 type AuthEffs e a = Eff (ref :: REF, console :: CONSOLE, err :: EXCEPTION, db :: DB | e) a

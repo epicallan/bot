@@ -13,6 +13,6 @@ import Utils (save', findByUserId)
 findWebhook :: forall e. Database -> UserId -> Aff (db :: DB| e) (Maybe Webhook)
 findWebhook database userId = findByUserId database "webhooks" userId
 
-saveWebhook :: forall e. Database -> UserId -> URL -> AccessToken -> Aff (db :: DB | e) Unit
-saveWebhook database id url accessToken =
-  save' database "webhooks" (Webhook { id, url, accessToken })
+saveWebhook :: forall e. Database -> UserId -> URL -> Aff (db :: DB | e) Unit
+saveWebhook database id url =
+  save' database "webhooks" (Webhook { id, url })

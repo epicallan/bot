@@ -75,7 +75,7 @@ exports.createJwtToken = function(secret) {
     return require('jsonwebtoken').sign(
       R.omit(['name', 'email', 'photo', 'gender'], user),
       secret,
-      { expiresIn: 60 * 60 * 5 }
+      { expiresIn: 60 * 60 * 60 * 10 }
     );
   };
 };
@@ -88,7 +88,7 @@ exports._protectedRoutesHandler = function(secret, req, res, next) {
 
 exports._setUserJwData = function (req, res, next) {
   return function() {
-    if (!req.user) return res.redirect('/login'); // redirect to login page
+    if (!req.user) return res.redirect('/auth/google/'); // redirect to signup
     req.userData = req.userData || {};
     R.keys(req.user).forEach(function(key) {
       req.userData[key] = req.user[key];
