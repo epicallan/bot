@@ -1,9 +1,9 @@
 module App.Handler.User where
 import Messenger.Webhook as Wb
-import App.Config.Config (jwtSecret)
+import App.Config (jwtSecret)
 import App.Foreign (createJwtToken)
-import App.Model.User (User, createUser)
-import App.Types (JWToken, AuthEffs, DbRef, AddWebHookEffs)
+import App.Model.User (createUser)
+import App.Types (JWToken, AuthEffs, DbRef, AddWebHookEffs, User)
 import Control.Monad ((*>))
 import Control.Monad.Eff.Class (liftEff)
 import Control.Monad.Eff.Console (log)
@@ -48,19 +48,13 @@ authHandler dbRef userPayload = do
 indexHandler :: forall e. Handler e
 indexHandler = (setStatus 200) *> (send "index page") -- TODO redirect to login page on front end app
 
-addFbWebhook :: forall e. DbRef -> AddWebHookEffs e
-addFbWebhook dbRef = do
-  eitherDb <- liftEff $ readRef dbRef
-  case eitherDb of
-    Left err -> do
-      liftEff $ log $ "Error connecting to the database " <> message err
-      setStatus 500
-    Right db -> do
-      maybeId <- getUserData "id"
-      case maybeId of
-        Nothing -> send "No user Id redirect to login page" -- TODO redirect to login page on front end app
-        Just foreignId ->
-          let eitherId = runExcept(readString foreignId :: F String)
-          in case eitherId of
-              Left _ -> send "Error reading authentication ID"
-              Right id -> (liftEff $ Wb.main db id) *> (send "set up webhook")
+addFbWebhook :: forall e. AddWebHookEffs e
+addFbWebhook = do
+  maybeId <- getUserData "id"
+  case maybeId of
+    Nothing -> send "No user Id redirect to login page" -- TODO redirect to login page on front end app
+    Just foreignId ->
+      let eitherId = runExcept(readString foreignId :: F String)
+      in case eitherId of
+          Left _ -> send "Error reading authentication ID"
+          Right id -> (liftEff $ Wb.main id) *> (send "set up webhook")

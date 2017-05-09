@@ -2,7 +2,6 @@ module Messenger.Types.MessageEvent where
 
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Console (CONSOLE)
-import DOM.Event.Event (timeStamp)
 import Data.Foreign.Class (class IsForeign)
 import Data.Foreign.Generic (defaultOptions, readGeneric)
 import Data.Foreign.NullOrUndefined (NullOrUndefined)

@@ -1,7 +1,6 @@
 module App.Foreign where
 
-import App.Model.User (User)
-import App.Types (JWToken, DbRef, AuthEffs, HandlerAuthEffs, GoogleStrategy, JWTSecret)
+import App.Types (JWToken, DbRef, AuthEffs, HandlerAuthEffs, GoogleStrategy, JWTSecret, User)
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Class (liftEff)
 import Control.Monad.Eff.Console (CONSOLE)

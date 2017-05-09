@@ -1,5 +1,4 @@
 module Messenger.Webhook where
-import Control.Monad ((*>))
 import Control.Monad.Aff (Aff, attempt, launchAff)
 import Control.Monad.Aff.Console (error, info, log)
 import Control.Monad.Eff.Console (CONSOLE)
@@ -10,14 +9,11 @@ import Data.Argonaut.Encode (encodeJson)
 import Data.Either (Either(..))
 import Data.Foreign (F)
 import Data.Foreign.Class (readJSON)
-import Data.Maybe (Maybe(..))
-import Database.Mongo.Mongo (Database)
 import Messenger.Config (fbConf)
 import Messenger.Foreign (createNgrokProxy')
-import Messenger.Model.Webhook (saveWebhook, findWebhook)
-import Messenger.Types (FbMessengerConf, AccessToken, AccessTokenJson(..), FbBase, FbWebhookRequest(..), UserId, WebHookSetUpAff, WebHookSetUpEffs, Webhook)
-import Network.HTTP.Affjax (AJAX, URL, get, post)
-import Prelude (bind, show, void, ($), (<>), Unit)
+import Messenger.Types (FbMessengerConf, AccessToken, AccessTokenJson(..), FbBase, FbWebhookRequest(..), UserId, WebHookSetUpAff, WebHookSetUpEffs)
+import Network.HTTP.Affjax (AJAX, URL, delete, get, post)
+import Prelude (Unit, bind, show, unit, void, ($), (<>))
 import Utils (multpleErrorsToStr)
 
 fbBase = "https://graph.facebook.com" :: FbBase
@@ -58,24 +54,38 @@ initfbWebhook conf url = do
         Right (AccessTokenJson { access_token }) -> do
           let payload = fbWebhookRequestJson url conf
           info $ " payload: \n " <> (show $ encodeJson payload)
-          fbGenEither <- attempt $ post (fbPostsubcriptionUrl conf access_token) $ payload
-          case fbGenEither of
+          subEither <- attempt $ post (fbPostsubcriptionUrl conf access_token) $ payload
+          case subEither of
             Left err  -> error $ message err
             Right res -> info  $ "added webhook: " <> res.response
 
 
-setupFbWebhook :: forall e. Database -> UserId -> WebHookSetUpAff e
-setupFbWebhook database userId = do
+setupFbWebhook :: forall e. UserId -> WebHookSetUpAff e -- TODO UserId maybe useless
+setupFbWebhook userId = do
   eitherUrl <- attempt $ createNgrokProxy' 8080
   case eitherUrl of
     Left err  -> log $ message err
     Right ngrokUrl -> do
       let userWbUrl = ngrokUrl <> "/webhook/" <> userId
-      initfbWebhook fbConf userWbUrl *> saveWebhook database userId userWbUrl -- TODO we may not need to save the webhook url afterall
+      initfbWebhook fbConf userWbUrl
 
-main :: forall e. Database -> UserId -> WebHookSetUpEffs e
-main database userId = void $ launchAff do
-  (maybeWebhook :: Maybe Webhook) <- findWebhook database userId
-  case maybeWebhook of
-    Nothing -> setupFbWebhook database userId
-    Just wb -> info $ "Already using webhook: " <> (show $ encodeJson wb)
+subscribePage :: forall e.  WebHookSetUpAff e
+subscribePage = do
+  let url = fbBase <> "/v2.8/me/subscribed_apps?access_token=" <> fbConf.accessToken
+  subEither <- attempt $ delete url
+  case subEither of
+    Left err  -> error $ message err
+    Right res -> info  $ "subscribed webhook: " <> res.response
+
+unSubscribePage :: forall e.  WebHookSetUpAff e
+unSubscribePage = do
+  let url = fbBase <> "/v2.8/me/subscribed_apps?access_token=" <> fbConf.accessToken
+  subEither <- attempt $ post url unit
+  case subEither of
+    Left err  -> error $ message err
+    Right res -> info  $ "unsubscribed webhook: " <> res.response
+
+main :: forall e. UserId -> WebHookSetUpEffs e
+main userId = void $ launchAff do
+  setupFbWebhook userId
+  subscribePage

@@ -1,6 +1,6 @@
 module Main where
 import App.Foreign as F
-import App.Config.Config (googleStrategy, jwtSecret)
+import App.Config (googleStrategy, jwtSecret)
 import App.Foreign (PASSPORT)
 import App.Handler.Messenger (messengerWebhookG, messengerWebhookP, verifyFbRequests)
 import App.Handler.User (authHandler, indexHandler, addFbWebhook)
@@ -52,7 +52,7 @@ appSetup dbRef = do
     get "/auth/google/return"     $ F.googleAuthReturn authHandler dbRef
     useAt "/protected/*"          $ F.protectedRoutesHandler jwtSecret
     useAt "/protected/*"          F.setUserJwData
-    get "/protected/user/webhook" $ addFbWebhook dbRef
+    get "/protected/user/webhook" $ addFbWebhook
     useOnError                    errorHandler
 
 main :: forall e. AppEffs (passport :: PASSPORT | e) Server
