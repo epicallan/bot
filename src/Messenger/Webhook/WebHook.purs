@@ -10,8 +10,9 @@ import Data.Either (Either(..))
 import Data.Foreign (F)
 import Data.Foreign.Class (readJSON)
 import Messenger.Config (fbConf)
-import Messenger.Foreign (createNgrokProxy')
-import Messenger.Types (FbMessengerConf, AccessToken, AccessTokenJson(..), FbBase, FbWebhookRequest(..), UserId, WebHookSetUpAff, WebHookSetUpEffs)
+import Messenger.Foreign (startNgrok)
+import Messenger.Types (FbMessengerConf, AccessToken, AccessTokenJson(..), FbBase
+  , FbWebhookRequest(..), UserId, WebHookSetUpAff, WebHookSetUpEffs, SubcribeAff)
 import Network.HTTP.Affjax (AJAX, URL, delete, get, post)
 import Prelude (Unit, bind, show, unit, void, ($), (<>))
 import Utils (multpleErrorsToStr)
@@ -62,14 +63,14 @@ initfbWebhook conf url = do
 
 setupFbWebhook :: forall e. UserId -> WebHookSetUpAff e -- TODO UserId maybe useless
 setupFbWebhook userId = do
-  eitherUrl <- attempt $ createNgrokProxy' 8080
+  eitherUrl <- attempt $ startNgrok 8080
   case eitherUrl of
     Left err  -> log $ message err
     Right ngrokUrl -> do
       let userWbUrl = ngrokUrl <> "/webhook/" <> userId
       initfbWebhook fbConf userWbUrl
 
-subscribePage :: forall e.  WebHookSetUpAff e
+subscribePage :: forall e.  SubcribeAff e
 subscribePage = do
   let url = fbBase <> "/v2.8/me/subscribed_apps?access_token=" <> fbConf.accessToken
   subEither <- attempt $ delete url
@@ -77,13 +78,14 @@ subscribePage = do
     Left err  -> error $ message err
     Right res -> info  $ "subscribed webhook: " <> res.response
 
-unSubscribePage :: forall e.  WebHookSetUpAff e
+unSubscribePage :: forall e. SubcribeAff e
 unSubscribePage = do
   let url = fbBase <> "/v2.8/me/subscribed_apps?access_token=" <> fbConf.accessToken
   subEither <- attempt $ post url unit
   case subEither of
     Left err  -> error $ message err
     Right res -> info  $ "unsubscribed webhook: " <> res.response
+
 
 main :: forall e. UserId -> WebHookSetUpEffs e
 main userId = void $ launchAff do

@@ -10,10 +10,10 @@ import Data.Foreign.Class (class IsForeign)
 import Data.Foreign.Generic (defaultOptions, readGeneric)
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
-import Database.Mongo.Mongo (DB)
-import Messenger.Foreign (Ngrok)
 import Network.HTTP.Affjax (AJAX, URL)
 import Prelude (class Show, Unit)
+
+foreign import data Ngrok :: !
 
 type FbBase = URL
 
@@ -30,8 +30,11 @@ type FbMessengerConf =
   , accessToken :: AccessToken
   }
 
-type WebHookSetUpEffs e = Eff (ngrok:: Ngrok, ajax :: AJAX, db :: DB, err:: EXCEPTION, console :: CONSOLE | e) Unit
-type WebHookSetUpAff e = Aff (ngrok:: Ngrok, ajax :: AJAX, db :: DB, console :: CONSOLE | e) Unit
+type WebHookSetUpEffs e = Eff (ngrok:: Ngrok, ajax :: AJAX, err:: EXCEPTION, console :: CONSOLE | e) Unit
+
+type WebHookSetUpAff e = Aff (ngrok:: Ngrok, ajax :: AJAX, console :: CONSOLE | e) Unit
+
+type SubcribeAff e = Aff (ajax :: AJAX, console :: CONSOLE | e) Unit
 
 type SendEff e a = Eff (ajax :: AJAX, console :: CONSOLE, err :: EXCEPTION | e) a
 

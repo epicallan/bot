@@ -1,6 +1,6 @@
 module App.Foreign where
 
-import App.Types (JWToken, DbRef, AuthEffs, HandlerAuthEffs, GoogleStrategy, JWTSecret, User)
+import App.Types (JWToken, DbRef, AuthEffs, HandlerAuthEffs, GoogleStrategy, JWTSecret, User, PASSPORT)
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Class (liftEff)
 import Control.Monad.Eff.Console (CONSOLE)
@@ -9,7 +9,7 @@ import Data.Function.Uncurried (Fn3, runFn3, runFn4, Fn4)
 import Node.Express.Handler (Handler, HandlerM(..))
 import Node.Express.Types (ExpressM, Request, Response)
 import Prelude (Unit, ($))
-foreign import data PASSPORT :: !
+
 
 foreign import jsonBodyParser :: forall e. Fn3 Request Response (ExpressM e Unit) (ExpressM e Unit)
 
