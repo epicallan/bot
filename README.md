@@ -6,4 +6,4 @@
 
 Note
 
-- Protected apis require a JWT authorization token, get this by signing up with google using the ``auth/google`` route adding to your authorization header
+- Protected apis require a JWT authorization token, get this by signing up with google using the ``auth/google`` route and then add to your authorization header
