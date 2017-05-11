@@ -28,7 +28,7 @@ uri = "mongodb://127.0.0.1:27017/bot-test"
 initDbRef ::forall e. Eff (ref :: REF|e) DbRef
 initDbRef = newRef $ Left (error "Mongodb is not connected")
 
-addDbRef:: forall e. DbRef -> Eff (db :: DB, err :: EXCEPTION, ref :: REF, console :: CONSOLE | e) Unit
+addDbRef:: forall e. DbRef -> Eff (db :: DB, exception :: EXCEPTION, ref :: REF, console :: CONSOLE | e) Unit
 addDbRef dbRef = void $ launchAff do
   eitherDatabase <- attempt $ connect uri
   liftEff $ writeRef dbRef (eitherDatabase :: AppDb)

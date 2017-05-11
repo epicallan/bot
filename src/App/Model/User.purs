@@ -10,7 +10,7 @@ import Data.Either (Either, either)
 import Data.Maybe (Maybe(..))
 import Database.Mongo.Mongo (DB, Database, collect, collection, find, insertOne)
 import Database.Mongo.Options (defaultInsertOptions)
-import Prelude (Unit, bind, pure, unit, ($), (<<<), const, (<>))
+import Prelude (Unit, bind, pure, unit, ($), (<<<), const, (<>), discard)
 import App.Model.Utils (findByUserId)
 import App.Types (User(..), Users)
 import Data.Array hiding (find)
@@ -18,7 +18,7 @@ import Data.Array hiding (find)
 userCol = "users" :: String
 
 -- | creates user if user doesnt exit
-createUser :: forall e. Database -> User -> Eff (db :: DB, console :: CONSOLE, err :: EXCEPTION | e) Unit
+createUser :: forall e. Database -> User -> Eff (db :: DB, console :: CONSOLE, exception :: EXCEPTION | e) Unit
 createUser database user@(User u) =
   void $ launchAff $ do
     col <- collection userCol database

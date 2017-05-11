@@ -9,7 +9,7 @@ import Control.Monad.Except (runExcept)
 import Data.Either (Either(..))
 import Data.Foldable (traverse_)
 import Data.Foreign (F)
-import Data.Foreign.Class (readJSON)
+import Data.Foreign.Generic (decodeJSON)
 import Data.Foreign.NullOrUndefined (unNullOrUndefined)
 import Data.Maybe (Maybe(..), maybe)
 import Data.Newtype (un)
@@ -63,7 +63,7 @@ getMessageEvent = do
   case eitherBodyRaw of
     Left multipleBodyErrors -> pure $ Left "error parsing request body"
     Right body -> do
-      let eitherMessageEvent = runExcept $ readJSON body :: F MessageEvent
+      let eitherMessageEvent = runExcept $ decodeJSON body :: F MessageEvent
       case eitherMessageEvent of
         Left multipleJsonErrors -> pure $ Left "error decoding body to messageEvent"
         Right messageEvent -> pure $ Right messageEvent

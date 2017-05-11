@@ -4,17 +4,17 @@ import Control.Monad.Aff.Console (error, info, log)
 import Control.Monad.Eff.Console (CONSOLE)
 import Control.Monad.Eff.Exception (message)
 import Control.Monad.Except (runExcept)
-import Data.Argonaut (Json)
+import Data.Argonaut.Core (Json)
 import Data.Argonaut.Encode (encodeJson)
 import Data.Either (Either(..))
 import Data.Foreign (F)
-import Data.Foreign.Class (readJSON)
+import Data.Foreign.Generic (decodeJSON)
 import Messenger.Config (fbConf)
 import Messenger.Foreign (startNgrok)
 import Messenger.Types (FbMessengerConf, AccessToken, AccessTokenJson(..), FbBase
   , FbWebhookRequest(..), UserId, WebHookSetUpAff, WebHookSetUpEffs, SubcribeAff)
 import Network.HTTP.Affjax (AJAX, URL, delete, get, post)
-import Prelude (Unit, bind, show, unit, void, ($), (<>))
+import Prelude (Unit, bind, show, unit, void, ($), (<>), discard)
 import Utils (multpleErrorsToStr)
 
 fbBase = "https://graph.facebook.com" :: FbBase
@@ -47,7 +47,7 @@ initfbWebhook conf url = do
   case eitherRes of
     Left err  -> error $ "fboauth access: " <> message err
     Right fbAuthRes -> do
-      let eitherJson = runExcept $ readJSON fbAuthRes.response :: F AccessTokenJson
+      let eitherJson = runExcept $ decodeJSON fbAuthRes.response :: F AccessTokenJson
       info $ "fb response: " <> fbAuthRes.response
       case eitherJson of
         Left errors ->

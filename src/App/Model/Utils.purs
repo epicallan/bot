@@ -13,7 +13,7 @@ import App.Types (UserId)
 import Prelude (bind, pure, ($), Unit, unit)
 
 
-findByUserId :: forall e a. (EncodeJson a, DecodeJson a) =>
+findByUserId :: forall e a. EncodeJson a => DecodeJson a =>
             Database -> String ->  UserId -> Aff (db :: DB| e) (Maybe a)
 findByUserId database colName userId = do
   col <- collection colName database
@@ -22,9 +22,9 @@ findByUserId database colName userId = do
     Left _        -> pure Nothing
     Right res -> pure $ Just res
 
-save' :: forall e a. (EncodeJson a, DecodeJson a) =>
+save' :: forall e a. EncodeJson a => DecodeJson a =>
             Database -> String -> a -> Aff (db :: DB| e) Unit
 save' database colName obj = do
   col <- collection colName database
-  insertOne obj defaultInsertOptions col
+  _ <- insertOne obj defaultInsertOptions col
   pure unit

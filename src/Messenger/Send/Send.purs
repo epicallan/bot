@@ -6,16 +6,16 @@ import Control.Monad.Eff.Class (liftEff)
 import Control.Monad.Eff.Console (CONSOLE, log)
 import Control.Monad.Eff.Exception (message)
 import Control.Monad.Except (runExcept)
-import Data.Argonaut (Json)
+import Data.Argonaut.Core (Json)
 import Data.Either (Either(..))
 import Data.Foreign (F)
-import Data.Foreign.Class (readJSON)
+import Data.Foreign.Generic (decodeJSON)
 import Data.Tuple (Tuple(..))
 import Messenger.Types (SendEff, SendResponse, AccessToken)
 import Messenger.Types.MessageEvent (Response(..))
 import Messenger.Types.Send (TextMessage)
 import Network.HTTP.Affjax (post, AJAX)
-import Prelude (Unit, bind, void, ($), (<>), show)
+import Prelude (Unit, bind, void, ($), (<>), show, discard)
 import Unsafe.Coerce (unsafeCoerce)
 import Utils (multpleErrorsToStr)
 
@@ -41,7 +41,7 @@ callSenderAPI token req = do
   case eitherRes of
     Left err      -> error $ message err
     Right payload -> do
-      let eitherSendResponse = runExcept $ readJSON payload.response :: F SendResponse
+      let eitherSendResponse = runExcept $ decodeJSON payload.response :: F SendResponse
       case eitherSendResponse of
         Left errs -> error $ "sendResponse decoding errors: " <> multpleErrorsToStr errs
         Right res -> info $ show res
