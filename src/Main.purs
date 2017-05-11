@@ -45,7 +45,7 @@ onExit = onBeforeExit $ void $ launchAff do
   unSubscribePage
   liftEff stopNgrok
 
--- TOFINDOUT i have no process related effect but i am required to add it here for program to compile
+-- TODO i have no process related effect but i am required to add it here for program to compile
 appSetup :: forall e. DbRef -> AppSetupEffs  e
 appSetup dbRef = do
     useExternal                   F.morgan
