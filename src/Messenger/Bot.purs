@@ -5,11 +5,9 @@ module Messenger.Bot (
 import Control.Bind ((>>=))
 import Control.Monad.Eff.Class (liftEff)
 import Control.Monad.Eff.Console (info, warn)
-import Control.Monad.Except (runExcept)
 import Data.Either (Either(..))
 import Data.Foldable (traverse_)
-import Data.Foreign (F)
-import Data.Foreign.Generic (decodeJSON)
+import Data.Foreign (MultipleErrors)
 import Data.Foreign.NullOrUndefined (unNullOrUndefined)
 import Data.Maybe (Maybe(..), maybe)
 import Data.Newtype (un)
@@ -21,9 +19,8 @@ import Messenger.Types.MessageEvent (EventAction(..), MessageEntry(..), MessageE
 import Node.Express.Handler (HandlerM)
 import Node.Express.Request (getBody)
 import Node.Express.Types (EXPRESS)
-import Prelude (Unit, bind, join, map, pure, ($))
-
-
+import Prelude (Unit, bind, join, map, pure, ($), (<>))
+import Utils (multpleErrorsToStr)
 
 getEventAction :: { id :: String, time :: Int } -> Messaging -> Maybe EventAction
 getEventAction msMeta (Messaging ms) =
@@ -59,11 +56,11 @@ messageEventRunner handler (MessageEvent messageEvent@{ object, entry}) = do
 
 getMessageEvent :: forall e. HandlerM (express :: EXPRESS | e) (Either String MessageEvent)
 getMessageEvent = do
-  eitherBodyRaw <- getBody
+  (eitherBodyRaw :: Either MultipleErrors  MessageEvent) <- getBody
   case eitherBodyRaw of
-    Left multipleBodyErrors -> pure $ Left "error parsing request body"
-    Right body -> do
-      let eitherMessageEvent = runExcept $ decodeJSON body :: F MessageEvent
-      case eitherMessageEvent of
-        Left multipleJsonErrors -> pure $ Left "error decoding body to messageEvent"
-        Right messageEvent -> pure $ Right messageEvent
+    Left errors -> pure $ Left $ "error parsing request body \n" <> multpleErrorsToStr errors
+    Right messageEvent-> pure $ Right messageEvent
+      -- let eitherMessageEvent = runExcept $ decodeJSON body :: F MessageEvent
+      -- case eitherMessageEvent of
+      --   Left multipleJsonErrors -> pure $ Left "error decoding body to messageEvent"
+      --   Right messageEvent -> pure $ Right messageEvent

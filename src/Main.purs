@@ -13,7 +13,6 @@ import Control.Monad.Eff.Ref (REF, newRef, writeRef)
 import Data.Either (Either(..))
 import Database.Mongo.Mongo (DB, connect)
 import Messenger.Foreign (stopNgrok)
-import Messenger.Webhook (unSubscribePage)
 import Node.Express.App (get, listenHttp, post, useAt, useExternal, useOnError)
 import Node.Express.Handler (Handler)
 import Node.Express.Response (sendJson, setStatus)
@@ -42,7 +41,6 @@ errorHandler err = do
 onExit :: forall e. ExitEffs e
 onExit = onBeforeExit $ void $ launchAff do
   liftEff $ info "Process is about to exit"
-  unSubscribePage
   liftEff stopNgrok
 
 -- TODO i have no process related effect but i am required to add it here for program to compile

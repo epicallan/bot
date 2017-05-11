@@ -54,7 +54,7 @@ messengerWebhookG :: forall e. Handler (console :: CONSOLE | e)
 messengerWebhookG = do
   maybeSubscribe <- getQueryParam "hub.mode"
   case maybeSubscribe of
-    Nothing -> defaulErr "No subscribe param"
+    Nothing -> defaulErr "No hub.mode param"
     Just "subscribe" ->  do
       maybeChallenge <- getQueryParam "hub.challenge"
       case maybeChallenge of

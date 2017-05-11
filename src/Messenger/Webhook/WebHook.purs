@@ -9,11 +9,11 @@ import Data.Argonaut.Encode (encodeJson)
 import Data.Either (Either(..))
 import Data.Foreign (F)
 import Data.Foreign.Generic (decodeJSON)
+import Data.Maybe (Maybe(..))
 import Messenger.Config (fbConf)
 import Messenger.Foreign (startNgrok)
-import Messenger.Types (FbMessengerConf, AccessToken, AccessTokenJson(..), FbBase
-  , FbWebhookRequest(..), UserId, WebHookSetUpAff, WebHookSetUpEffs, SubcribeAff)
-import Network.HTTP.Affjax (AJAX, URL, delete, get, post)
+import Messenger.Types (FbMessengerConf, AccessToken, AccessTokenJson(..), FbBase, FbWebhookRequest(..), UserId, WebHookSetUpAff, WebHookSetUpEffs, SubcribeAff)
+import Network.HTTP.Affjax (AJAX, URL, delete, get, post, post')
 import Prelude (Unit, bind, show, unit, void, ($), (<>), discard)
 import Utils (multpleErrorsToStr)
 
@@ -21,7 +21,7 @@ fbBase = "https://graph.facebook.com" :: FbBase
 
 -- | for getting access_token
 fbOauthUrl ::  FbMessengerConf -> String
-fbOauthUrl conf = fbBase <> "/v2.8/oauth/access_token"
+fbOauthUrl conf = fbBase <> "/v2.9/oauth/access_token"
   <> "?client_id=" <> conf.appId
   <> "&client_secret=" <> conf.appSecret
   <> "&grant_type=client_credentials"
@@ -70,21 +70,21 @@ setupFbWebhook userId = do
       let userWbUrl = ngrokUrl <> "/webhook/" <> userId
       initfbWebhook fbConf userWbUrl
 
-subscribePage :: forall e.  SubcribeAff e
-subscribePage = do
-  let url = fbBase <> "/v2.8/me/subscribed_apps?access_token=" <> fbConf.accessToken
+unSubscribePage :: forall e.  SubcribeAff e
+unSubscribePage = do
+  let url = fbBase <> "/v2.9/me/subscribed_apps?access_token=" <> fbConf.accessToken
   subEither <- attempt $ delete url
   case subEither of
     Left err  -> error $ message err
-    Right res -> info  $ "subscribed webhook: " <> res.response
+    Right res -> info  $ "unsubscribed webhook: " <> res.response
 
-unSubscribePage :: forall e. SubcribeAff e
-unSubscribePage = do
-  let url = fbBase <> "/v2.8/me/subscribed_apps?access_token=" <> fbConf.accessToken
-  subEither <- attempt $ post url unit
+subscribePage :: forall e. SubcribeAff e
+subscribePage = do
+  let url = fbBase <> "/v2.9/me/subscribed_apps?access_token=" <> fbConf.accessToken
+  subEither <- attempt $ post' url (Nothing :: Maybe Json)
   case subEither of
     Left err  -> error $ message err
-    Right res -> info  $ "unsubscribed webhook: " <> res.response
+    Right res -> info  $ "subscribed webhook: " <> res.response
 
 
 main :: forall e. UserId -> WebHookSetUpEffs e

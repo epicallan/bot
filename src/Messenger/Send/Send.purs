@@ -46,4 +46,4 @@ callSenderAPI token req = do
         Left errs -> error $ "sendResponse decoding errors: " <> multpleErrorsToStr errs
         Right res -> info $ show res
   where
-    fburl = (<>) "https://graph.facebook.com/v2.8/me/messages?access_token="
+    fburl = (<>) "https://graph.facebook.com/v2.9/me/messages?access_token="
