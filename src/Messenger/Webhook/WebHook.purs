@@ -32,7 +32,8 @@ fbPostsubcriptionUrl conf accessToken
 
 fbWebhookRequestJson :: URL -> FbMessengerConf -> Json
 fbWebhookRequestJson callbackurl conf  =
-      let fields = [ "messages"]
+      let fields = [  "message_deliveries", "message_reads", "messages"
+                    , "messaging_optins", "messaging_postbacks", "messaging_referrals"]
           fbWebhookRequest = FbWebhookRequest { object : "page"
                                               , verify_token : conf.verifyToken
                                               , callback_url : callbackurl
