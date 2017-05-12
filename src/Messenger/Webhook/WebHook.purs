@@ -14,7 +14,7 @@ import Messenger.Config (fbConf)
 import Messenger.Foreign (startNgrok)
 import Messenger.Types (FbMessengerConf, AccessToken, AccessTokenJson(..), FbBase, FbWebhookRequest(..), UserId, WebHookSetUpAff, WebHookSetUpEffs, SubcribeAff)
 import Network.HTTP.Affjax (AJAX, URL, delete, get, post, post')
-import Prelude (Unit, bind, show, unit, void, ($), (<>), discard)
+import Prelude (Unit, bind, show, void, ($), (<>), discard)
 import Utils (multpleErrorsToStr)
 
 fbBase = "https://graph.facebook.com" :: FbBase
