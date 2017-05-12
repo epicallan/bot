@@ -16,8 +16,8 @@ import Messenger.Types (SendEff)
 import Messenger.Types.MessageEvent (EventAction(..), Message(..), Response(..), Meta)
 import Node.Express.Handler (Handler, next, nextThrow)
 import Node.Express.Request (getQueryParam, getRouteParam)
-import Node.Express.Response (send, setStatus)
-import Prelude (bind, otherwise, pure, ($), (<>), (==))
+import Node.Express.Response (send, setStatus, end)
+import Prelude (bind, otherwise, pure, ($),(<>), (==))
 -- import Utils (findByUserId)
 
 -- | TODO logging should depend on dev environment
@@ -71,10 +71,11 @@ messengerWebhookP dbRef = do
     Right db -> do
       maybeUserId <- getRouteParam "userId"
       case maybeUserId of
-        Nothing -> (liftEff $ log "No userId") *> setStatus 200
+        Nothing -> (liftEff $ log "No userId") *> setStatus 200 *> end
         Just  userId  -> do
           eitherMessageEvent <- getMessageEvent
           case eitherMessageEvent of
-            Left err -> (liftEff $ log $ "message Event error: " <> err) *> setStatus 200
+            Left err ->
+              (liftEff $ log $ "message Event error: " <> err) *> setStatus 200 *> end
             Right mEvent ->
-              (liftEff $ messageEventRunner messageEventHandler mEvent) *> setStatus 200
+              (liftEff $ messageEventRunner messageEventHandler mEvent) *> setStatus 200 *> end

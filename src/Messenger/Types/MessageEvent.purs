@@ -21,8 +21,8 @@ newtype Referral = Referral
   }
 
 newtype Coordinates = Coordinates
- { lat :: Int
- , long :: Int
+ { lat :: Number
+ , long :: Number
  }
 
 newtype MessageAttachementPayload = MessageAttachementPayload
@@ -50,8 +50,8 @@ newtype Message = Message
   }
 
 newtype Read = Read
-  { watermark :: Int
-  , seq :: Int
+  { watermark :: Number
+  , seq :: Number
   }
 
 newtype SenderRecipientId = SenderRecipientId { id :: String }
@@ -61,7 +61,7 @@ derive instance newtypeSenderRecipientId :: Newtype SenderRecipientId _
 newtype Messaging = Messaging
   { sender :: SenderRecipientId
   , recipient :: SenderRecipientId
-  , timestamp :: Int
+  , timestamp :: Number
   , postback :: NullOrUndefined Postback
   , message :: NullOrUndefined Message
   , read :: NullOrUndefined Read
@@ -70,7 +70,7 @@ newtype Messaging = Messaging
 
 newtype MessageEntry = MessageEntry
   { id :: String
-  , time :: Int
+  , time :: Number
   , messaging :: Array Messaging
   }
 
@@ -81,8 +81,8 @@ newtype MessageEvent = MessageEvent
 
 type Meta =
   { id :: String
-  , time :: Int
-  , timestamp :: Int
+  , time :: Number
+  , timestamp :: Number
   , sender :: String
   , recipient :: String
   }

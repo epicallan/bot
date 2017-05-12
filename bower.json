@@ -9,7 +9,7 @@
   ],
   "dependencies": {
     "purescript-foldable-traversable": "^3.0.0",
-    "purescript-express": "git@github.com:epicallan/purescript-express.git#893bdbee191d130de663d511ebde880b26d64338",
+    "purescript-express": "git@github.com:epicallan/purescript-express.git#0fac62e14204a77d6eb6ed773e725922b5b74898",
     "purescript-node-process": "^4.0.0",
     "purescript-node-mongodb": "^0.0.8",
     "purescript-aff": "^3.1.0",

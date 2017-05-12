@@ -32,8 +32,7 @@ fbPostsubcriptionUrl conf accessToken
 
 fbWebhookRequestJson :: URL -> FbMessengerConf -> Json
 fbWebhookRequestJson callbackurl conf  =
-      let fields = ["message_deliveries", "message_reads", "messages", "messaging_optins",
-                  "messaging_postbacks", "messaging_referrals"]
+      let fields = [ "messages"]
           fbWebhookRequest = FbWebhookRequest { object : "page"
                                               , verify_token : conf.verifyToken
                                               , callback_url : callbackurl
@@ -76,7 +75,7 @@ unSubscribePage = do
   subEither <- attempt $ delete url
   case subEither of
     Left err  -> error $ message err
-    Right res -> info  $ "unsubscribed webhook: " <> res.response
+    Right res -> info  $ "unsubscribed previous webhook: " <> res.response
 
 subscribePage :: forall e. SubcribeAff e
 subscribePage = do
@@ -90,4 +89,5 @@ subscribePage = do
 main :: forall e. UserId -> WebHookSetUpEffs e
 main userId = void $ launchAff do
   setupFbWebhook userId
+  unSubscribePage -- first unSubscribePage from previous webhooks
   subscribePage

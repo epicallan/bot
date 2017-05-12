@@ -52,8 +52,8 @@ appSetup dbRef = do
     liftEff $                     F.googleAuthStrategy googleStrategy
     get "/"                       indexHandler
     useAt "/webhook/*"            verifyFbRequests
-    post "/webhook/:userId"       $ messengerWebhookP dbRef
     get "/webhook/:userId"        messengerWebhookG
+    post "/webhook/:userId"       $ messengerWebhookP dbRef
     get "/auth/google/"           F.googleAuth
     get "/auth/google/return"     $ F.googleAuthReturn authHandler dbRef
     useAt "/protected/*"          $ F.protectedRoutesHandler jwtSecret
