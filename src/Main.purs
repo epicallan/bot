@@ -63,7 +63,7 @@ appSetup dbRef = do
 
 main :: forall e. AppEffs e Server
 main = do
-    dbRef <- initDbRef
+    dbRef <- initDbRef -- TODO consider switching to a Reader Monad
     addDbRef dbRef
     onExit
     listenHttp (appSetup dbRef) 8080 \_ -> log $ "Listening on 8080"
