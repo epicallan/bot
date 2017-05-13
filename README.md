@@ -6,5 +6,5 @@
 
 ### Note
 
-This repo composed of a messenger API and a bot application using it in the app folder.
+This repo is composed of a messenger API and a bot application using it in the app folder.
 once I have got the API finished to my satisfaction. I will put the API module in a separate repo.
